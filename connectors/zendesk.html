@@ -67,7 +67,7 @@
     <p>TSANet connectors divide by one question: will the platform run your code inside the member's own tenant? Salesforce, ServiceNow, Dynamics and Oracle will. <a href="fin-intercom.html">Intercom will not</a>, which is why that one is a hosted gateway. Zendesk is the interesting middle case — and understanding which half you are in explains most of the design below.</p>
     <div class="twrap">
       <table>
-        <caption>Everything in this connector runs in the member's account. Nothing is hosted by TSANet — which is also why nothing here is shared infrastructure, and a broken install affects one member.</caption>
+        <caption>Everything in this connector runs in the member's account, so a broken install affects one member. The Connect API remains a shared dependency: a platform outage stops collaboration here as it does everywhere.</caption>
         <thead><tr><th scope="col">&nbsp;</th><th scope="col">Runs in-tenant</th><th scope="col" class="next">Consequence</th></tr></thead>
         <tbody>
           <tr><th scope="row">ZAF app</th><td>Yes — client-side, in a sandboxed iframe</td><td class="next">No server, no storage, no native dialogs</td></tr>

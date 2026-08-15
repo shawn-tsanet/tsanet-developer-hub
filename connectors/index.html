@@ -121,11 +121,12 @@
           <tr><th scope="row">Auto-accept</th><td>Asset-match flow, rejects on no match</td><td>Auto-routing by case number</td><td>One trigger, scoped by conditions</td><td>Deliberately manual</td><td class="na">—</td></tr>
           <tr><th scope="row">Distribution</th><td>Managed package</td><td>Managed solution / AppSource</td><td>App upload + ZIS bundle</td><td>Nothing to install</td><td class="na">—</td></tr>
           <tr><th scope="row">Shipping a fix</th><td>Members upgrade</td><td>Members upgrade</td><td>Members upgrade</td><td>Central, nothing to do</td><td class="na">—</td></tr>
-          <tr><th scope="row">If it breaks</th><td>One member</td><td>One member</td><td>One member</td><td><span style="color:var(--orange);font-weight:600">Every member on it</span></td><td class="na">—</td></tr>
+          <tr><th scope="row">Connector faults</th><td>Isolated</td><td>Isolated</td><td>Isolated</td><td>Shared — runs clustered</td><td class="na">—</td></tr>
+          <tr><th scope="row">Platform outage</th><td colspan="5" style="text-align:center;color:var(--orange)">Affects every member in every class — the Connect API is the shared floor</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Two rows are worth pausing on. <strong>Reconciliation</strong> tells you what happens when a push is missed — and the Zendesk poller runs in a browser page, so it only catches up while an agent has a tab open. <strong>If it breaks</strong> is the row that most often gets under-weighted: an in-tenant connector fails one member at a time, while a gateway's failures are correlated across everyone on it. That is the trade the <a href="../topics/connector-classes.html">connector classes topic</a> works through.</p>
+    <p>Two rows are worth pausing on. <strong>Reconciliation</strong> tells you what happens when a push is missed — and the Zendesk poller runs in a browser page, so it only catches up while an agent has a tab open. The <strong>two failure rows</strong> belong together: every class depends on the Connect API, so a platform outage reaches everyone regardless of where connector code runs. What the gateway changes is that connector faults become correlated rather than independent — which is why it is built to run clustered, and why deployment discipline matters more there. The <a href="../topics/connector-classes.html">connector classes topic</a> works the trade through.</p>
   </div>
 </section>
 
@@ -184,7 +185,7 @@
         <span class="card-foot">Community →</span>
       </a>
     </div>
-    <div class="note" style="margin-top:20px"><strong>Before you start, settle one question:</strong> will your platform run your code inside your own tenant? It decides who operates the integration, where credentials live, and whether one failure is everyone's failure — and it is a property of the platform, not a choice you get to make. The <a href="../topics/connector-classes.html">connector classes topic</a> has the four-question procedure for working it out.</div>
+    <div class="note" style="margin-top:20px"><strong>Before you start, settle one question:</strong> will your platform run your code inside your own tenant? It decides who operates the integration, where credentials live, and whether connector faults are independent or correlated — and it is a property of the platform, not a choice you get to make. The <a href="../topics/connector-classes.html">connector classes topic</a> has the four-question procedure for working it out.</div>
   </div>
 </section>
 

@@ -85,13 +85,14 @@
           <tr><th scope="row">Who operates it</th><td>The member</td><td class="next">TSANet</td></tr>
           <tr><th scope="row">Credentials live</th><td>In the member's tenant</td><td class="next">With TSANet, one set per member</td></tr>
           <tr><th scope="row">Case lifecycle state</th><td>The CRM holds it</td><td class="next">The gateway must hold it</td></tr>
-          <tr><th scope="row">If it breaks</th><td>One member is affected</td><td class="next"><span class="flag">Every member on the gateway</span></td></tr>
+          <tr><th scope="row">Connector faults</th><td>Isolated to one member</td><td class="next">Correlated across members, so the gateway runs clustered</td></tr>
+          <tr><th scope="row">Platform outage</th><td colspan="2" style="text-align:center">Affects everyone either way — the Connect API is a shared dependency</td></tr>
           <tr><th scope="row">Distribution</th><td>Installed package or app</td><td class="next">Connected app plus a hosted service</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p>The row worth pausing on is the second from last. An in-tenant connector fails one member at a time. A gateway adapter is shared infrastructure, and its failures are correlated across everyone using it — which is why so much of the design below is about durability and recovery rather than features.</p>
+    <p>The two failure rows are worth reading together. Every member already depends on the Connect API, so a platform outage stops collaboration whichever class they are in — an in-tenant package does not keep working when the platform is down. What a gateway changes is that connector faults become correlated rather than independent, which is a design input rather than a drawback: it is why the gateway is built to run clustered and to a higher availability target than any single member's install, and why so much of the design below is durability and recovery rather than features.</p>
 
     <h3>Three differences that force the change</h3>
     <ol class="drivers">
