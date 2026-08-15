@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServiceNow platform assessment — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink);margin:16px 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  .c{color:var(--mute)}
+  /* status banner — this page documents something that does not exist yet */
+  .status-band{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:12px;padding:24px 26px;margin-top:26px}
+  .status-band h2{font-size:20px;margin-bottom:10px}
+  .status-band p{max-width:76ch}
+  .status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:18px}
+  .status-item{border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:var(--paper)}
+  .status-item b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);margin-bottom:5px}
+  .status-item span{font-size:13.5px;color:var(--ink)}
+  /* evidence tags */
+  .tag{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;padding:2px 6px;white-space:nowrap;margin-left:4px;display:inline-block;vertical-align:1px}
+  .tag.doc{color:var(--deep);background:rgba(0,91,130,.07);border:1px solid rgba(0,91,130,.22)}
+  .tag.probe{color:var(--orange);background:rgba(204,78,11,.08);border:1px solid rgba(204,78,11,.3)}
+  .legend-key{display:flex;gap:20px;flex-wrap:wrap;margin:18px 0 0;font-size:13px;color:var(--slate)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors" aria-current="page">Connectors</a>
+      <a href="../index.html#api">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / <a href="../index.html#connectors">Connectors</a> / ServiceNow</div>
+    <h1>ServiceNow</h1>
+    <p class="lede">A platform assessment, not a connector page. TSANet has committed to begin development in 2026; nothing is built yet and nothing here has been tested against a live instance. This is what the platform looks like to an integrator, gathered so the work starts from a map rather than a blank page.</p>
+    <div class="meta-row">
+      <span><b>Status</b> Not yet built</span>
+      <span><b>Evidence</b> Vendor documentation only</span>
+      <span><b>Live-verified</b> Nothing</span>
+      <span><b>Assessed</b> 2026-08-12</span>
+    </div>
+    <div class="toc">
+      <a href="#status">Where this stands</a>
+      <a href="#shape">Why it is different</a>
+      <a href="#surface">Agent surfaces</a>
+      <a href="#api">Table API traps</a>
+      <a href="#events">Events</a>
+      <a href="#model">Object model</a>
+      <a href="#tenancy">Tenancy &amp; auth</a>
+      <a href="#distribution">Distribution</a>
+      <a href="#open">Open questions</a>
+    </div>
+  </div>
+</header>
+
+<section id="status">
+  <div class="wrap">
+    <div class="status-band">
+      <h2>Read this before you use anything below</h2>
+      <p>Every claim on this page is <strong>documented, not observed</strong> — somebody read it in vendor documentation or a community thread, not that anybody watched it work. That distinction has mattered before: on the most recent platform TSANet assessed, published documentation turned out to be wrong or silent on the majority of the findings that ended up shaping the design.</p>
+      <p style="margin-top:12px">Treat this as a research map with citations. Anything marked <span class="tag probe">needs probe</span> is a known unknown rather than an oversight, and the first verified fact on this page will be the first one worth designing against.</p>
+      <div class="status-grid">
+        <div class="status-item"><b>Connector</b><span>Not built. Development committed for 2026.</span></div>
+        <div class="status-item"><b>Architecture</b><span>Open. Not settled publicly or internally.</span></div>
+        <div class="status-item"><b>Probe</b><span>None run. No live instance tested.</span></div>
+        <div class="status-item"><b>Getting involved</b><span>Early access enquiries to <code>membership@tsanet.org</code></span></div>
+      </div>
+      <div class="legend-key">
+        <span><span class="tag doc">documented</span> read in vendor docs or community sources</span>
+        <span><span class="tag probe">needs probe</span> unverified, and known to be unverified</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="shape">
+  <div class="wrap">
+    <p class="eyebrow">Platform shape</p>
+    <h2>Why ServiceNow does not fit either existing pattern</h2>
+    <p>TSANet's connectors so far divide by one question: will the platform run your code inside the member's own tenant? <a href="salesforce.html">Salesforce</a> and <a href="dynamics.html">Dynamics</a> say yes and get managed packages. <a href="fin-intercom.html">Intercom</a> says no and gets a TSANet-hosted gateway. <a href="zendesk.html">Zendesk</a> sits between.</p>
+    <p>ServiceNow answers <strong>both at once</strong>, and that is the whole difficulty. It will happily run installed code — scoped applications are the native extension model. But it hosts <em>none</em> of the UI for you and provides <em>no</em> native webhooks. There is no Canvas Kit and no ZAF analogue: if an agent is to see anything, it is either code installed in their instance or a page served from somewhere else and framed in.</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1020 340" style="min-width:900px" role="img" aria-label="What ServiceNow provides and does not provide: it offers scoped applications, a Table API, UI Actions and UI Builder components, and outbound REST from business rules; it does not offer a vendor-hosted UI surface, native webhooks, or native HMAC signing on outbound calls.">
+          <defs><marker id="snA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+
+          <text class="tt" x="20" y="28" style="fill:var(--green)">The platform gives you</text>
+          <rect class="bx-grn" x="20" y="44" width="290" height="120" rx="8"/>
+          <text class="ts" x="34" y="68">Scoped applications, installed</text>
+          <text class="ts" x="34" y="86">Table API (v2, stable for years)</text>
+          <text class="ts" x="34" y="104">UI Actions · UI Pages · UI Builder</text>
+          <text class="ts" x="34" y="122">Outbound REST from Business Rules</text>
+          <text class="ts" x="34" y="140">Per-instance OAuth clients</text>
+          <text class="tl" x="34" y="157">all of it inside the member's instance</text>
+
+          <text class="tt" x="20" y="204" style="fill:var(--orange)">The platform does not give you</text>
+          <rect class="bx" x="20" y="220" width="290" height="100" rx="8" style="stroke:var(--orange)"/>
+          <text class="ts" x="34" y="244">A vendor-hosted UI surface</text>
+          <text class="ts" x="34" y="262">Native webhooks of any kind</text>
+          <text class="ts" x="34" y="280">Native HMAC signing on outbound</text>
+          <text class="tl" x="34" y="300">no Canvas Kit, no ZAF equivalent</text>
+
+          <path class="ln" d="M310,104 H392" marker-end="url(#snA)"/>
+          <path class="ln" d="M310,264 H392" marker-end="url(#snA)"/>
+
+          <rect class="bx-acc" x="398" y="128" width="270" height="108" rx="8"/>
+          <text class="tt" x="412" y="152">The forced consequence</text>
+          <text class="ts" x="412" y="172">Some code must be installed in</text>
+          <text class="ts" x="412" y="190">every member's own instance —</text>
+          <text class="ts" x="412" y="208">there is no arrangement that</text>
+          <text class="ts" x="412" y="226">avoids it.</text>
+
+          <path class="ln" d="M668,182 H736" marker-end="url(#snA)"/>
+
+          <rect class="bx" x="742" y="112" width="258" height="140" rx="8" style="stroke:var(--blue);stroke-dasharray:5 4"/>
+          <text class="tt" x="756" y="136" style="fill:var(--blue)">The open question</text>
+          <text class="ts" x="756" y="158">Not "app or no app".</text>
+          <text class="ts" x="756" y="178">It is what lives inside the app:</text>
+          <text class="ts" x="756" y="198">the whole connector, or a thin</text>
+          <text class="ts" x="756" y="216">shell over a hosted service.</text>
+          <text class="tl" x="756" y="238">undecided — see Open questions</text>
+        </svg>
+      </div>
+      <figcaption>The platform settles the first question and leaves the second open. Because an installed component is unavoidable either way, the architecture decision does not change <em>whether</em> a member installs something — only how much of the integration lives in there, and therefore how often they have to upgrade it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="surface">
+  <div class="wrap">
+    <p class="eyebrow">Agent surfaces</p>
+    <h2>Where a collaboration panel could live</h2>
+    <ul class="tight">
+      <li><strong>Two UI families, and a member is on one or the other.</strong> Classic UI means a UI Action opening a UI Page or modal on the Incident or Case form. Configurable Workspaces on Next Experience means UI Builder components on the record page. An app covering both typically ships a UI Action — which surfaces in each — plus optional workspace components. <span class="tag doc">documented</span></li>
+      <li><strong>Legacy Agent Workspace is not a target.</strong> Support ended at the Washington DC release. <span class="tag doc">documented</span></li>
+      <li><strong>The closest thing to a hosted surface is an iframe.</strong> The UI Builder <code>now-iframe</code> component can point at an externally served page and supports a <code>postMessage</code> channel back. That is the mechanism by which any hosted UI would appear. <span class="tag doc">documented</span></li>
+      <li><strong>Whether that iframe actually renders on the record page an agent works is unverified.</strong> Community reports say yes on CSM and Service Operations workspaces. This is the single highest-risk unknown on the platform, and it is precisely the class of question that can only be closed by installing the thing and looking — the equivalent question on the last platform assessed came out fine, but only after someone pinned the app and checked. <span class="tag probe">needs probe</span></li>
+      <li><strong>No platform-enforced render deadline</strong> in the way a server-rendered canvas has one, since the iframe loads a page served elsewhere. The latency that matters instead is the Table API's own round-trip, because that is what the agent waits on. <span class="tag probe">needs probe</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="api">
+  <div class="wrap">
+    <p class="eyebrow">Table API</p>
+    <h2>Traps to design around</h2>
+    <p>Several of these rhyme with traps found on other platforms, which is a reason to take them seriously and not a reason to assume they behave identically.</p>
+    <ul class="tight">
+      <li><strong>Unknown fields are reportedly accepted and silently dropped.</strong> An invalid or misspelled field name is said to return 200/201 with the value discarded. If a probe confirms it, read-back-and-assert becomes a standing rule for every write on this platform. <span class="tag probe">needs probe</span></li>
+      <li><strong>Journal fields are write-only append, and this one bites hardest.</strong> <code>work_notes</code> and <code>comments</code> accept writes but <strong>read back empty</strong> unless you pass <code>sysparm_display_value=true</code> or query <code>sys_journal_field</code> by element and element id. An adapter that writes a note and reads the record back to verify will see nothing and conclude the write failed — when it succeeded. <span class="tag doc">documented</span></li>
+      <li><strong>Display values versus raw values.</strong> <code>sysparm_display_value</code> switches between sys_ids and labels; reference fields otherwise return <code>{value, link}</code> objects. Pick one convention per call site and hold it. <span class="tag doc">documented</span></li>
+      <li><strong>Create returns the record including <code>sys_id</code></strong>, which is the handle everything downstream needs. <span class="tag doc">documented</span></li>
+      <li><strong>Custom fields are prefixed</strong> — <code>u_</code> in global scope, or <code>x_&lt;vendor&gt;_&lt;app&gt;_</code> when they belong to a scoped app. Rename behaviour is unverified. <span class="tag probe">needs probe</span></li>
+      <li><strong>ACLs can silently block writes</strong> by the integration user. This presents almost identically to the unknown-field trap and has a completely different fix, so the diagnostic has to distinguish them. <span class="tag doc">documented</span></li>
+      <li><strong>Rate limits are member configuration, not a platform constant.</strong> Limits come from per-instance Rate Limit Rules; with no matching rule there is no enforced default and no rate-limit headers at all. Violations return 429 with <code>Retry-After</code>. <span class="tag doc">documented</span></li>
+    </ul>
+    <div class="note"><strong>Pagination has a correctness trap, not just a performance one.</strong> Offset pagination silently drops records when rows change mid-pagination, and <code>sys_updated_on</code> has one-second granularity and is not unique. A poller therefore needs a keyset cursor on the pair <code>(sys_updated_on, sys_id)</code> — a plain timestamp cursor will lose records that share a second. <span class="tag doc">documented</span></div>
+  </div>
+</section>
+
+<section id="events">
+  <div class="wrap">
+    <p class="eyebrow">Events</p>
+    <h2>No native webhooks, and a licensing trap in the workaround</h2>
+    <p>Nothing on the platform pushes to an external endpoint by default. Outbound delivery is configured inside the instance, and there are two ways to do it — which is where the trap is.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Mechanism</th><th>Licensing</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Async Business Rule calling <code>RESTMessageV2</code></td><td>Base platform</td><td>The one to build on</td></tr>
+          <tr><td>Flow Designer REST step</td><td>Consumes IntegrationHub transactions</td><td>Costs the member per event</td></tr>
+          <tr><td>IntegrationHub spoke</td><td>Consumes IntegrationHub transactions</td><td>Costs the member per event</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Keeping any installed app on scripted outbound REST is therefore not a style preference — the alternative bills the member's IntegrationHub entitlement on every event the integration emits. <span class="tag doc">documented</span></p>
+    <ul class="tight">
+      <li><strong>Signing inverts the usual question.</strong> There is no native HMAC toggle for outbound REST; Basic auth, OAuth provider profiles, arbitrary headers and mutual TLS are supported. Because the emitter is code you ship, you <em>specify</em> the signing scheme rather than discovering it — a rare position to be in, and one worth using deliberately. <span class="tag doc">documented</span></li>
+      <li><strong>Delivery is not guaranteed by the platform.</strong> <code>executeAsync</code> routes through the ECC queue and can retry via ECC Failure Retry; synchronous calls cap at 30 seconds and the general outbound timeout defaults to 175. At-least-once delivery is something the installed app builds — a queue table plus a scheduled job — not something the platform provides. <span class="tag doc">documented</span></li>
+      <li><strong>Payload shape is yours to define</strong>, for the same reason the signature is. <span class="tag doc">documented</span></li>
+      <li><strong>Polling is a legitimate primary path</strong>, not just a fallback, and may be the only option where a member blocks inbound traffic. Query the Table API filtered on <code>sys_updated_on</code>, with the keyset cursor described above. <span class="tag doc">documented</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="model">
+  <div class="wrap">
+    <p class="eyebrow">Object model</p>
+    <h2>Three candidate homes for a collaboration case</h2>
+    <p>Unusually, the right answer here is probably per member rather than per platform.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Option</th><th>Consideration</th></tr></thead>
+        <tbody>
+          <tr><td>ITSM <code>incident</code></td><td>Natural for ITSM shops, but puts partner collaborations into queues the member's own team already works</td></tr>
+          <tr><td>CSM <code>sn_customerservice_case</code></td><td>Natural for customer-service shops; case types extend this table</td></tr>
+          <tr><td>Dedicated companion task table</td><td>Keeps TSANet cases out of existing queues entirely. This is the shape a well-known publicly listed ServiceNow integration chose for exactly this problem</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note" style="border-left-color:var(--red)"><strong>The one that must not be got wrong: note visibility.</strong> <code>work_notes</code> are internal; <code>comments</code> are customer-visible. Partner collaboration content is not customer-facing by default, so inbound partner notes belong in <code>work_notes</code> unless a member explicitly asks otherwise. Getting this backwards publishes another vendor's content to the member's end customer. <span class="tag doc">documented</span></div>
+    <ul class="tight">
+      <li><strong>"eBonding" is the platform's own word</strong> for cross-company ticket exchange, and it is the vocabulary to use with ServiceNow-side stakeholders. There is an out-of-the-box eBonding spoke for ServiceNow-to-ServiceNow, and an established third-party middleware market — so an externally hosted hub bonding tickets across companies is a well-precedented pattern here, not a novel one. <span class="tag doc">documented</span></li>
+      <li><strong>The eBonding convention for a foreign identifier</strong> is the Task table's <code>correlation_id</code> and <code>correlation_display</code>. Whether that field is efficiently searchable decides how load-bearing an integration's own link table has to be. <span class="tag probe">needs probe</span></li>
+      <li><strong>Whether a CSM case type can be created via API</strong> rather than by admin action is unverified. <span class="tag probe">needs probe</span></li>
+      <li><strong>Status mapping is deliberately not proposed here.</strong> OPEN / INFORMATION / ACCEPTED / CLOSED / REJECTED have to land on whichever object model a member uses, and inventing a ServiceNow-local convention before that choice is made would add a dialect rather than settle one.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="tenancy">
+  <div class="wrap">
+    <p class="eyebrow">Tenancy &amp; auth</p>
+    <h2>Per-instance, and reachable only sometimes</h2>
+    <ul class="tight">
+      <li><strong>Every member has their own instance</strong> at <code>https://&lt;instance&gt;.service-now.com</code>, publicly reachable <em>by default</em>. <span class="tag doc">documented</span></li>
+      <li><strong>But inbound access is a per-member question, not an assumption.</strong> Customers can enable IP Address Access Control, and security-conscious enterprises do — an entire third-party static-IP proxy market exists to serve integrations that hit this. Any externally hosted component needs stable egress addresses, and where ingress is blocked the traffic direction inverts: the instance polls out instead. This is the single most likely thing to reshape a design per member. <span class="tag doc">documented</span></li>
+      <li><strong>Regions do not change the host</strong> for commercial instances regardless of hosting country. The exception is US Government Community Cloud, which uses <code>servicenowservices.com</code>. Store a full base URL per member rather than deriving one from an instance name. <span class="tag doc">documented</span></li>
+      <li><strong>Server-to-server auth is an OAuth client registered in the member's own instance</strong>, client-credentials grant, bound to a dedicated OAuth Application User — available from the Washington DC release onward. Older instances fall back to Basic auth on a dedicated integration user. Inbound API keys with HMAC and inbound mutual TLS exist as separate mechanisms. <span class="tag doc">documented</span></li>
+      <li><strong>Secret rotation appears to be a manual admin action.</strong> Unverified, and it matters for the credential runbook. <span class="tag probe">needs probe</span></li>
+      <li><strong>Members will span two or three release families at any time.</strong> Two family releases ship a year and customers upgrade on their own schedules, so anything built has to tolerate a trailing-edge instance. The Table API itself is URL-versioned and has been stable for years; it is the <em>auth</em> surface that varies with release level. <span class="tag doc">documented</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="distribution">
+  <div class="wrap">
+    <p class="eyebrow">Distribution</p>
+    <h2>Certification gates the Store, not the platform</h2>
+    <p>A member's admin can install a third-party scoped app directly, with no ServiceNow review, no partner program and no fee — by update-set XML import, or by source-control import in Studio. That is the same private-install model TSANet already uses elsewhere. <span class="tag doc">documented</span></p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Channel</th><th>What it costs</th><th>What it buys</th></tr></thead>
+        <tbody>
+          <tr><td>Update set / source-control import</td><td>Nothing. Each member's admin imports each version by hand</td><td>Viable immediately; fine at pilot scale</td></tr>
+          <tr><td>ServiceNow Store</td><td>Certification review per submission (reported 3–5 weeks), partner-program membership, and development on provisioned vendor instances rather than a developer instance</td><td>Listing, plus versioned push-install across customers</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="tight">
+      <li><strong>Recertification recurs.</strong> New app versions with code changes and new release families both require it — which makes the recertification cadence a direct function of how often the installed component has to change. <span class="tag doc">documented</span></li>
+      <li><strong>Without the Store there is no central upgrade push.</strong> The app repository is intra-company only, so every member's admin imports every version. Manageable for a pilot, painful across a fleet. <span class="tag doc">documented</span></li>
+      <li><strong>A member's own IT governance may require a certified app regardless.</strong> That is member policy rather than a ServiceNow rule, and it is an onboarding question. <span class="tag doc">documented</span></li>
+      <li><strong>Development runs on a free Personal Developer Instance</strong>, which is adequate for the Table API, Business Rules, UI Builder, and — importantly — update-set and source-control installs. It hibernates when idle and is reclaimed after roughly ten days of inactivity, so treat anything built there as disposable and keep artifacts in version control. A PDI <em>cannot</em> install Store apps. <span class="tag doc">documented</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="open">
+  <div class="wrap">
+    <p class="eyebrow">Open questions</p>
+    <h2>What has to be answered, and what each one blocks</h2>
+    <p>These are listed because they are unresolved, not because they are hard. Each blocks real design work downstream.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Question</th><th>Blocks</th></tr></thead>
+        <tbody>
+          <tr><td>How much of the connector lives in the installed app</td><td>Everything. It decides what a member installs and how often they upgrade it</td></tr>
+          <tr><td>Does <code>now-iframe</code> render on the Incident and Case record pages an agent actually works</td><td>The agent surface, and therefore the entire outbound flow design</td></tr>
+          <tr><td>Is the unknown-field silent-ignore real on the Table API</td><td>Whether read-back-and-assert is mandatory on every write</td></tr>
+          <tr><td>Which object holds a case, per member</td><td>Object mapping, token placement, status mapping</td></tr>
+          <tr><td>Is the correlation field efficiently searchable</td><td>How load-bearing an integration's own link table has to be</td></tr>
+          <tr><td>Per-member ingress: can an external service reach the instance, or must the instance poll out</td><td>Inbound topology — and it may differ member to member</td></tr>
+          <tr><td>Secret rotation mechanics for an instance-registered OAuth client</td><td>Credential lifecycle and the operational runbook</td></tr>
+          <tr><td>Whether any member's own policy requires a Store-certified app</td><td>Distribution path and the cost model</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><strong>Interested in shaping this?</strong> ServiceNow members who want to influence the design — or to be a pilot instance once a spike has run — should contact <code>membership@tsanet.org</code>. A member willing to lend a real instance and a real workflow is worth more at this stage than any amount of further desk research.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
