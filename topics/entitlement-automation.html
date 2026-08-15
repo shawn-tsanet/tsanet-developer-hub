@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deciding what to accept automatically — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink);margin:16px 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  .c{color:var(--mute)}
+  .flag{color:var(--orange);font-weight:600}
+  .posture{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:20px 22px;border-left:3px solid var(--line)}
+  .posture.p1{border-left-color:var(--red)}
+  .posture.p2{border-left-color:var(--orange)}
+  .posture.p3{border-left-color:var(--green)}
+  .posture.p4{border-left-color:var(--blue)}
+  .posture h3{margin:0 0 3px;font-size:17px}
+  .posture .who{font-family:var(--mono);font-size:11.5px;color:var(--mute);margin-bottom:11px}
+  .posture p{font-size:13.5px;margin-bottom:8px}
+  .posture .trade{font-size:12.5px;color:var(--mute);border-top:1px solid var(--line);padding-top:9px;margin-top:11px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors">Connectors</a>
+      <a href="../index.html#api">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics" aria-current="page">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / <a href="../index.html#topics">Topics</a> / Entitlement automation</div>
+    <h1>Deciding what to accept automatically</h1>
+    <p class="lede">Every shipped connector offers some way to accept inbound collaboration requests without an agent. They disagree completely about when that is a good idea — and the disagreement is worth understanding, because accepting a case is not a routing step. It is a promise to another company.</p>
+    <div class="meta-row">
+      <span><b>Topic</b> Inbound automation</span>
+      <span><b>Grounded in</b> Four connectors</span>
+      <span><b>Audience</b> Anyone configuring inbound</span>
+    </div>
+    <div class="toc">
+      <a href="#commitment">What acceptance commits you to</a>
+      <a href="#postures">Four postures</a>
+      <a href="#howthey">How each connector does it</a>
+      <a href="#designing">Designing your rule</a>
+      <a href="#failures">Failure modes</a>
+    </div>
+  </div>
+</header>
+
+<section id="commitment">
+  <div class="wrap">
+    <p class="eyebrow">The reframe</p>
+    <h2>Acceptance is a commitment, not a triage step</h2>
+    <p>It is tempting to read <code>/approval</code> as "route this to my team". It is not. Accepting a collaboration request tells the partner that <strong>an engineer is engaged on their problem</strong>, and it satisfies the response SLA at the same moment. Those two effects pull in opposite directions, and that tension is the whole subject of this page.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Accepting does this</th><th>Which means</th></tr></thead>
+        <tbody>
+          <tr><td>Sets <code>responded</code> to true</td><td>The platform stops tracking <code>respondBy</code>. Your SLA obligation is met — the clock is off.</td></tr>
+          <tr><td>Records an engineer against the case</td><td>The partner sees a named contact and a case number, and reasonably expects work to be happening.</td></tr>
+          <tr><td>Moves the case out of OPEN</td><td>Reject and Request-information are no longer available. The triage decision has been made.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>So automatic acceptance buys guaranteed SLA compliance and spends credibility. If your rule accepts something nobody is going to work, the clock stops and the partner waits — which is a worse outcome for them than an honest breach, because a breach is visible and a false acceptance is not.</p>
+    <div class="note"><strong>The question is therefore not "should we automate acceptance".</strong> It is "what can we assert automatically that is actually true". A rule that can verify entitlement is asserting something. A rule that accepts everything is asserting nothing except that the clock should stop.</div>
+  </div>
+</section>
+
+<section id="postures">
+  <div class="wrap">
+    <p class="eyebrow">The spectrum</p>
+    <h2>Four postures, all shipping today</h2>
+    <div class="grid g2" style="margin-bottom:24px">
+      <div class="posture p1">
+        <h3>Accept everything</h3>
+        <div class="who">Zendesk — one trigger</div>
+        <p>Every inbound case is accepted the moment it arrives. No condition, no lookup, no check that the request is one you can act on.</p>
+        <p class="trade">Buys: the SLA can never be breached. Spends: every case is a promise, including the ones that turn out not to be yours.</p>
+      </div>
+      <div class="posture p2">
+        <h3>Accept what matches existing work</h3>
+        <div class="who">Dynamics — auto-routing</div>
+        <p>Look for a case that already exists for the partner's case number; fall back to the customer name. On a match, create and relate the local case and accept.</p>
+        <p class="trade">Buys: re-collaboration on a known issue attaches to the right place instead of opening a duplicate. Spends: says nothing about entitlement.</p>
+      </div>
+      <div class="posture p3">
+        <h3>Accept what you can verify</h3>
+        <div class="who">Salesforce — asset match</div>
+        <p>Resolve the serial number to an asset you actually have a record of. On a match, create the case and accept. <strong>On no match, reject.</strong></p>
+        <p class="trade">Buys: acceptance means something checkable. Spends: needs clean asset data, and rejects legitimate requests when that data is stale.</p>
+      </div>
+      <div class="posture p4">
+        <h3>Never accept automatically</h3>
+        <div class="who">Fin / Intercom — guardrail</div>
+        <p>Automation drafts and proposes; a person accepts, declines or asks for more information. The commitment stays with a human even when the answer is machine-generated.</p>
+        <p class="trade">Buys: no promise is made that nobody chose to make. Spends: the SLA clock runs until someone acts.</p>
+      </div>
+    </div>
+
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 230" style="min-width:880px" role="img" aria-label="A spectrum of four acceptance postures from accept-everything to never-accept, showing that SLA safety decreases and promise integrity increases along it.">
+          <line x1="120" y1="76" x2="900" y2="76" stroke="var(--line)" stroke-width="2"/>
+          <circle cx="180" cy="76" r="9" fill="var(--red)"/>
+          <circle cx="420" cy="76" r="9" fill="var(--orange)"/>
+          <circle cx="660" cy="76" r="9" fill="var(--green)"/>
+          <circle cx="880" cy="76" r="9" fill="var(--blue)"/>
+
+          <text class="tt" x="180" y="52" text-anchor="middle">Everything</text>
+          <text class="tt" x="420" y="52" text-anchor="middle">Known work</text>
+          <text class="tt" x="660" y="52" text-anchor="middle">Entitled</text>
+          <text class="tt" x="880" y="52" text-anchor="middle">Nothing</text>
+
+          <text class="ts" x="180" y="104" text-anchor="middle">Zendesk trigger</text>
+          <text class="ts" x="420" y="104" text-anchor="middle">Dynamics routing</text>
+          <text class="ts" x="660" y="104" text-anchor="middle">Salesforce asset</text>
+          <text class="ts" x="880" y="104" text-anchor="middle">Fin guardrail</text>
+
+          <text class="tl" x="16" y="146">Asserted</text>
+          <text class="ts" x="180" y="146" text-anchor="middle">nothing</text>
+          <text class="ts" x="420" y="146" text-anchor="middle">we know this issue</text>
+          <text class="ts" x="660" y="146" text-anchor="middle">we support this thing</text>
+          <text class="ts" x="880" y="146" text-anchor="middle">a person decided</text>
+
+          <text class="tl" x="16" y="176">SLA risk</text>
+          <text class="ts" x="180" y="176" text-anchor="middle" style="fill:var(--green)">none</text>
+          <text class="ts" x="420" y="176" text-anchor="middle">low</text>
+          <text class="ts" x="660" y="176" text-anchor="middle">low</text>
+          <text class="ts" x="880" y="176" text-anchor="middle" style="fill:var(--orange)">real</text>
+
+          <text class="tl" x="16" y="206">False promises</text>
+          <text class="ts" x="180" y="206" text-anchor="middle" style="fill:var(--orange)">likely</text>
+          <text class="ts" x="420" y="206" text-anchor="middle">possible</text>
+          <text class="ts" x="660" y="206" text-anchor="middle">unlikely</text>
+          <text class="ts" x="880" y="206" text-anchor="middle" style="fill:var(--green)">none</text>
+        </svg>
+      </div>
+      <figcaption>The two risks trade directly against each other, and no posture removes both. Which one you would rather carry is a business decision about how much a promise to a partner is worth relative to a breached acknowledgment clock.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="howthey">
+  <div class="wrap">
+    <p class="eyebrow">Implementations</p>
+    <h2>How each connector actually does it</h2>
+
+    <h3>Zendesk: one trigger, no code</h3>
+    <p>The accept pipeline already ships — it watches the TSANet Action field and calls the approval API when that field is set. The only missing piece is who sets it, and a single trigger fills that in: fire on ticket creation, condition on the inbound tag, action sets TSANet Action to Accept. Everything runs server-side, so no agent needs to be logged in.</p>
+    <p>Crucially, <strong>trigger conditions give you scoping for free</strong>. Adding a condition on the partner field turns "accept everything" into "accept everything from this partner" — which moves you along the spectrum without writing anything. Cases that do not match simply stay open for normal triage.</p>
+    <div class="note">The published guide is honest about the cost: auto-accept commits you instantly, and the triage options are skipped for auto-accepted cases. If some cases should still be looked at first, the conditional form is the answer. <a href="https://tsanet.gitbook.io/connect/documentation/zendesk-app/auto-accepting-inbound-cases">Setup guide →</a></p>
+
+    <h3>Salesforce: verify, then accept — or reject</h3>
+    <p>The shipped flow is the most opinionated of the four, and the only one that will say no. It fires on TSANet Case creation where no local case is linked, direction is inbound, and a serial number is present:</p>
+    <pre><code>Get Asset by serial number
+  └─ no match  <span class="c">→ reject the collaboration request</span>
+  └─ match     <span class="c">→ continue</span>
+Get Contact by customer email        <span class="c">(enrichment, optional)</span>
+Create the Salesforce Case           <span class="c">asset, contact, subject, description</span>
+Update the TSANet Case               <span class="c">attach the new Case Id</span>
+Approve the collaboration request    <span class="c">with engineer details</span>
+Notify the case owner</code></pre>
+    <p>Rejecting on no asset match <em>is</em> the entitlement check. A partner escalating about hardware you have no record of does not become a case your team has to triage — and the partner finds out immediately rather than after a silent wait.</p>
+
+    <h3>Dynamics: attach to work that already exists</h3>
+    <p>Auto-routing is a feature toggle rather than a flow to activate, and it solves a different problem: not "should we take this" but "where does this belong". It searches for an existing case by the partner's case number, falls back to a customer-name lookup, and on a match creates and relates the local case before approving.</p>
+    <p>Matching on the partner's own case number first is what makes re-collaboration on a continuing issue attach to the same case rather than opening a duplicate. That is worth having even if you never intend to auto-accept.</p>
+
+    <h3>Fin / Intercom: draft automatically, commit deliberately</h3>
+    <p>The gateway connector takes the opposite position and states the reasoning explicitly: accepting, declining and requesting information are <strong>contractual commitments to another vendor, made under a service-level clock</strong>. Automation composes the answer; a person makes the commitment.</p>
+    <p>There is a second reason specific to AI-assisted flows. Partner escalations carry end-customer logs and text pasted in verbatim — untrusted content arriving at a system that would then reply under your company's name. Keeping a human on the commitment is also a containment boundary.</p>
+  </div>
+</section>
+
+<section id="designing">
+  <div class="wrap">
+    <p class="eyebrow">Designing yours</p>
+    <h2>Building a rule that asserts something true</h2>
+    <p>The Salesforce flow is the useful template even on other platforms, because its shape generalises: <em>resolve an identifier, branch on whether you found it, and be willing to say no.</em> What varies is the identifier.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Match on</th><th>Asserts</th><th>Fails when</th></tr></thead>
+        <tbody>
+          <tr><td>Asset or serial number</td><td>We support this specific thing</td><td>Asset records are stale or the partner quotes a different identifier</td></tr>
+          <tr><td>Entitlement or contract</td><td>This customer is covered right now</td><td>Coverage lives in a system the connector cannot reach</td></tr>
+          <tr><td>Partner identity</td><td>We have an arrangement with this company</td><td>Says nothing about the specific request</td></tr>
+          <tr><td>Existing case number</td><td>We are already working this issue</td><td>First contact on a new issue never matches</td></tr>
+          <tr><td>Product or component</td><td>This is a thing our team owns</td><td>Field is free text and partners fill it inconsistently</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Two design rules worth adopting whichever identifier you pick:</p>
+    <ul class="tight">
+      <li><strong>Decide what "no match" means before you build.</strong> Rejecting is a real answer and it is kinder than silence — but only if your matching is good enough that a rejection is usually correct. If it is not, leave unmatched cases open for a human instead. Rejecting wrongly is worse than not automating.</li>
+      <li><strong>Start scoped, then widen.</strong> One partner, or one product line, with everything else falling through to normal triage. Every connector here supports a conditional form, and it converts a policy question into an observation: run it narrow for a month and count how often the rule was right.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="failures">
+  <div class="wrap">
+    <p class="eyebrow">Failure modes</p>
+    <h2>What goes wrong, in the order you will meet it</h2>
+    <ul class="tight">
+      <li><strong>The silent accept.</strong> A rule accepts a case that lands in a queue nobody watches. The clock is off, so nothing escalates, and the partner waits on an engineer who was never assigned. This is the failure that auto-accept exists to prevent and the one it most often causes.</li>
+      <li><strong>The confident reject.</strong> Matching runs against stale reference data and declines a request that was perfectly valid. The partner has to re-submit, and now believes your integration is unreliable. Audit your rejections before you trust them — they are the ones nobody complains about internally.</li>
+      <li><strong>Accepted, but nothing was created.</strong> The approval call succeeds and the local case creation fails after it. The partner sees acceptance; you have no record. Order the steps so the local record exists first where the platform allows it, and treat a post-acceptance failure as an alert rather than a log line.</li>
+      <li><strong>Status divergence.</strong> Your side auto-accepts and shows a case as owned, while the partner's connector shows only "Accepted" with no engineer name they recognise. Both are technically right. Agree with your frequent partners what acceptance means operationally, because the API does not define it for you.</li>
+      <li><strong>The rule outliving its reason.</strong> A scoped trigger added for one partner during one incident is still accepting everything from them two years later. Anything that commits automatically deserves a review date.</li>
+    </ul>
+    <div class="note">If you are unsure where to start: turn on <a href="../connectors/dynamics.html#automation">match-to-existing-work</a> routing, which reduces duplicates without asserting anything you cannot back, and leave acceptance manual until you have a matching rule you would defend to a partner.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
