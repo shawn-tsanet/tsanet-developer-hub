@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  .cat{display:grid;grid-template-columns:9.5rem 1fr;gap:18px;padding:15px 20px;border-bottom:1px solid var(--line);align-items:baseline}
+  .cat:last-child{border-bottom:none}
+  .cat .name{font-family:var(--mono);font-size:12.5px;color:var(--deep)}
+  .cat .name em{font-style:normal;color:var(--mute);font-size:11px;display:block;margin-top:2px}
+  .cat p{font-size:13.5px;color:var(--slate);margin:0;line-height:1.55}
+  .catlist{border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden}
+  @media(max-width:640px){.cat{grid-template-columns:1fr;gap:4px}}
+  .repo{font-family:var(--mono);font-size:12.5px}
+  .count{font-family:var(--mono);font-size:11px;color:var(--mute)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../connectors/index.html">Connectors</a>
+      <a href="../api/index.html">API</a>
+      <a href="../docs/index.html">Design Docs</a>
+      <a href="../topics/index.html">Topics</a>
+      <a href="index.html" aria-current="page">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / Community</div>
+    <h1>Where to take what</h1>
+    <p class="lede">Some channels are open today and one is still being built. This page is the routing: what to do with a connector bug, a question, a credential request, or a correction to something on this site.</p>
+    <div class="meta-row">
+      <span><b>Open now</b> Connector issue trackers</span>
+      <span><b>Open now</b> membership@tsanet.org</span>
+      <span><b>Being set up</b> GitHub Discussions</span>
+    </div>
+    <div class="toc">
+      <a href="#routing">What goes where</a>
+      <a href="#trackers">Connector issue trackers</a>
+      <a href="#discussions">Discussion categories</a>
+      <a href="#corrections">Corrections to this site</a>
+    </div>
+  </div>
+</header>
+
+<section id="routing">
+  <div class="wrap">
+    <p class="eyebrow">Routing</p>
+    <h2>What goes where</h2>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>If you want to…</th><th>Go to</th><th>Open?</th></tr></thead>
+        <tbody>
+          <tr><td>Report a bug or request a feature in a shipped connector</td><td>That connector's issue tracker — see below</td><td><span class="pill ok">now</span></td></tr>
+          <tr><td>Get API credentials, a Beta account, or early access</td><td><a href="mailto:membership@tsanet.org">membership@tsanet.org</a></td><td><span class="pill ok">now</span></td></tr>
+          <tr><td>Arrange attachment enablement or a pilot instance</td><td><a href="mailto:membership@tsanet.org">membership@tsanet.org</a></td><td><span class="pill ok">now</span></td></tr>
+          <tr><td>Tell us which connector to build next</td><td><a href="mailto:membership@tsanet.org">membership@tsanet.org</a>, and Wish List once it opens</td><td><span class="pill ok">now</span></td></tr>
+          <tr><td>Report something wrong or missing on this hub</td><td><a href="mailto:membership@tsanet.org">membership@tsanet.org</a></td><td><span class="pill ok">now</span></td></tr>
+          <tr><td>Ask the community how to do something</td><td>Q&amp;A</td><td><span class="pill warn">soon</span></td></tr>
+          <tr><td>Show what you built</td><td>Show and tell</td><td><span class="pill warn">soon</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><strong>The short version:</strong> anything about a specific shipped connector goes to that connector's repository, where the maintainers and the history already are. Anything about access, credentials or getting started goes to membership. Everything else is waiting on the discussion space.</div>
+  </div>
+</section>
+
+<section id="trackers">
+  <div class="wrap">
+    <p class="eyebrow">Open today</p>
+    <h2>Connector issue trackers</h2>
+    <p>Each shipped connector is developed in the open, with a public issue tracker. This is the fastest route for anything specific: a bug, a behaviour that surprised you, a feature you need. The history is there too, so it is worth searching before filing — most surprising behaviours have been hit before.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Connector</th><th>Repository</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td><a href="../connectors/salesforce.html">Salesforce</a></td><td class="repo"><a href="https://github.com/tsanetgit/SFDC_App/issues">tsanetgit/SFDC_App</a></td><td>Managed package, flows, Apex, LWC</td></tr>
+          <tr><td><a href="../connectors/zendesk.html">Zendesk</a></td><td class="repo"><a href="https://github.com/tsanetgit/Zendesk_App/issues">tsanetgit/Zendesk_App</a></td><td>ZAF app, ZIS bundle, field actions</td></tr>
+          <tr><td><a href="../connectors/dynamics.html">Dynamics</a></td><td class="repo"><a href="https://github.com/tsanetgit/MS_Power_App/issues">tsanetgit/MS_Power_App</a></td><td>Solution, plugins, Power Automate flows</td></tr>
+          <tr><td><a href="../connectors/connect-sdk.html">Connect SDK</a></td><td class="repo"><a href="https://github.com/tsanetgit/Connect_SDK/issues">tsanetgit/Connect_SDK</a></td><td>Java client, console app, attachment receiver</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><a href="../connectors/fin-intercom.html">Fin / Intercom</a> and <a href="../connectors/servicenow.html">ServiceNow</a> have no public tracker — the first is in early access and the second is not built. Route both through membership.</p>
+    <h3>What makes a report easy to act on</h3>
+    <ul class="tight">
+      <li><strong>Which environment.</strong> Beta and Production behave differently often enough that it is the first question anyone will ask.</li>
+      <li><strong>The case token</strong>, if there is one. It keys everything on the platform side and turns a description into something reproducible.</li>
+      <li><strong>What you expected versus what happened.</strong> Several behaviours on this platform look like bugs and are not — silent 200s on unknown fields, notes that read back empty, a case that cannot be closed while OPEN. The <a href="../api/index.html">API guidance</a> covers the ones we know about.</li>
+      <li><strong>Whether it is reproducible.</strong> A one-off during a deploy window is a different problem from something that happens every time.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="discussions">
+  <div class="wrap">
+    <p class="eyebrow">Being set up</p>
+    <h2>Discussion categories</h2>
+    <p>Discussion will run on GitHub Discussions — no separate accounts, no separate platform. The space exists and the categories below are live, but it is not open to members yet. Until it is, use the routes above.</p>
+    <div class="catlist">
+      <div class="cat"><span class="name">Q&amp;A<em>answerable</em></span><p>How do I do this? Auth, process forms, lifecycle transitions, webhook delivery. Answers can be marked, so the next person with the same question finds it.</p></div>
+      <div class="cat"><span class="name">Troubleshooting<em>answerable</em></span><p>Something is not working. Silent failures, signature mismatches, a sync that stopped. Distinct from Q&amp;A because the useful answer is usually a diagnosis rather than an explanation.</p></div>
+      <div class="cat"><span class="name">Show and tell</span><p>What you built. Custom integrations, translation services, platform findings — including the unflattering ones, which are usually the most useful.</p></div>
+      <div class="cat"><span class="name">Ideas</span><p>Changes to the API or the connectors. Gaps, papercuts, and behaviour that surprised you enough to be worth changing rather than documenting.</p></div>
+      <div class="cat"><span class="name">Wish List</span><p>Which connector should exist next, and what platform your team actually runs on. This is the one that most directly changes what gets built.</p></div>
+      <div class="cat"><span class="name">Membership<em>answerable</em></span><p>Credentials, onboarding, pilot instances and early-access programmes. Mirrors what membership@tsanet.org handles today.</p></div>
+      <div class="cat"><span class="name">Announcements</span><p>Maintainer posts only: connector releases, API changes, and the deprecation dates worth knowing about in advance.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="corrections">
+  <div class="wrap">
+    <p class="eyebrow">This site</p>
+    <h2>Corrections are the most valuable thing you can send</h2>
+    <p>Much of what is on this hub was assembled from connector source, platform specifications and live probes rather than from a maintained document. That makes it useful and it also makes it fallible — and some of it is already known to be inconsistent at the source.</p>
+    <div class="cols">
+      <ul class="tight">
+        <li><strong>If a page contradicts what you observe in production</strong>, the page is more likely wrong than you are. Send it.</li>
+        <li><strong>If two things on this hub disagree with each other</strong>, that is worth reporting even without knowing which is right.</li>
+        <li><strong>If a documented gotcha no longer reproduces</strong>, that is just as useful — behaviours get fixed and pages go stale.</li>
+      </ul>
+      <ul class="tight">
+        <li>Every page states what it was verified against, and when. Start there when judging whether to trust something.</li>
+        <li>Where two sources genuinely disagree, pages say so rather than picking one quietly — the <a href="../api/index.html#webhooks">webhook retry policy</a> is the current example.</li>
+        <li>Assessments carry evidence tags: <em>documented</em> means somebody read it, not that anybody saw it work.</li>
+      </ul>
+    </div>
+    <a class="btn btn-primary" href="mailto:membership@tsanet.org" style="margin-top:8px">Send a correction</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
