@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zendesk connector — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  td.next{color:var(--ink);background:rgba(0,91,130,.05)}
+  thead th.next{background:rgba(0,91,130,.05);color:var(--blue)}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink);margin:16px 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  .k{color:var(--blue);font-weight:600}
+  .c{color:var(--mute)}
+  .bad-v{color:var(--red);font-weight:600}
+  .good-v{color:var(--green);font-weight:600}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors" aria-current="page">Connectors</a>
+      <a href="../index.html#api">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / <a href="../index.html#connectors">Connectors</a> / Zendesk</div>
+    <h1>Zendesk</h1>
+    <p class="lede">A two-layer in-tenant connector: a ZAF app your agents work in, and a ZIS integration that receives inbound cases and forwards public replies. Both run inside your Zendesk account. This page is the architecture, the setup path, and the platform behaviour that costs real debugging time.</p>
+    <div class="meta-row">
+      <span><b>Class</b> In-tenant (partial)</span>
+      <span><b>Status</b> GA</span>
+      <span><b>Surface</b> Ticket sidebar + nav bar</span>
+      <span><b>Repo</b> tsanetgit/Zendesk_App</span>
+    </div>
+    <div class="toc">
+      <a href="#class">Connector class</a>
+      <a href="#topology">Architecture</a>
+      <a href="#auth">Authentication</a>
+      <a href="#lifecycle">Lifecycle &amp; SLA</a>
+      <a href="#notes">Note visibility</a>
+      <a href="#zaf">ZAF constraints</a>
+      <a href="#setup">Setup</a>
+      <a href="#gotchas">Platform gotchas</a>
+      <a href="#clocks">Deprecation clocks</a>
+    </div>
+  </div>
+</header>
+
+<section id="class">
+  <div class="wrap">
+    <p class="eyebrow">Connector class</p>
+    <h2>Zendesk sits between the two connector classes</h2>
+    <p>TSANet connectors divide by one question: will the platform run your code inside the member's own tenant? Salesforce, ServiceNow, Dynamics and Oracle will. <a href="fin-intercom.html">Intercom will not</a>, which is why that one is a hosted gateway. Zendesk is the interesting middle case — and understanding which half you are in explains most of the design below.</p>
+    <div class="twrap">
+      <table>
+        <caption>Everything in this connector runs in the member's account. Nothing is hosted by TSANet — which is also why nothing here is shared infrastructure, and a broken install affects one member.</caption>
+        <thead><tr><th scope="col">&nbsp;</th><th scope="col">Runs in-tenant</th><th scope="col" class="next">Consequence</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">ZAF app</th><td>Yes — client-side, in a sandboxed iframe</td><td class="next">No server, no storage, no native dialogs</td></tr>
+          <tr><th scope="row">ZIS flows</th><td>Yes — Zendesk-hosted integration service</td><td class="next">Declarative only; no arbitrary server code</td></tr>
+          <tr><th scope="row">Credentials</th><td>In the member's own tenant</td><td class="next">The member holds their TSANet credential</td></tr>
+          <tr><th scope="row">Lifecycle state</th><td>Zendesk ticket fields + tags</td><td class="next">No external state store to operate</td></tr>
+          <tr><th scope="row">Arbitrary server code</th><td><span class="pill bad">no</span></td><td class="next">Anything ZAF and ZIS cannot express has no home</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><strong>What this rules out.</strong> A background service you control does not exist here. Polling runs in a ZAF <em>background page</em> that lives only while a Zendesk tab is open, and inbound delivery arrives as a push into ZIS. If you need guaranteed server-side reconciliation independent of a browser session, that is the gateway pattern, not this one.</div>
+  </div>
+</section>
+
+<section id="topology">
+  <div class="wrap">
+    <p class="eyebrow">Architecture</p>
+    <h2>Two layers, and one that no longer exists</h2>
+    <p>Layer 1 is the ZAF app the agent sees. Layer 2 is ZIS, which holds the connections and receives inbound pushes. A third layer — a GitHub Actions workflow running a token-refresh job and an SLA monitor — has been <strong>retired</strong>: ZIS renews its own tokens now, and the ZAF background poller applies the SLA breach tag.</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1160 600" style="min-width:1040px" role="img" aria-label="Architecture: the Zendesk agent workspace, platform triggers and Support API on the left; the ZAF app and ZIS integration in the centre; the TSANet Connect API and webhook push on the right. Five numbered edges cross between the member's tenant and TSANet.">
+          <defs>
+            <marker id="zI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker>
+            <marker id="zA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--blue)"/></marker>
+          </defs>
+
+          <!-- LEFT: Zendesk surfaces -->
+          <rect class="bx-ext" x="16" y="76" width="250" height="106" rx="8"/>
+          <text class="tt" x="30" y="98">Agent workspace</text>
+          <text class="ts" x="30" y="117">ticket sidebar panel</text>
+          <text class="ts" x="30" y="133">Add Note · Accept · Reject · Close</text>
+          <text class="ts" x="30" y="149">custom inline modals only</text>
+          <text class="ts" x="30" y="165">panel measures, never asserts height</text>
+
+          <rect class="bx-ext" x="16" y="230" width="250" height="106" rx="8"/>
+          <text class="tt" x="30" y="252">Zendesk platform</text>
+          <text class="ts" x="30" y="271">trigger: public comment + tsanet tag</text>
+          <text class="ts" x="30" y="287">webhook (Basic auth) → ZIS</text>
+          <text class="ts" x="30" y="303">custom fields · tagger dropdowns</text>
+          <text class="ts" x="30" y="319">views · SLA breach trigger</text>
+
+          <rect class="bx-ext" x="16" y="392" width="250" height="106" rx="8"/>
+          <text class="tt" x="30" y="414">Support API /api/v2</text>
+          <text class="ts" x="30" y="433">tickets · comments · audits</text>
+          <text class="ts" x="30" y="449">tag POST REPLACES the whole set:</text>
+          <text class="ts" x="30" y="465">read → PUT concat + safe_update</text>
+          <text class="ts" x="30" y="481">date fields are YYYY-MM-DD only</text>
+
+          <!-- CENTER: the member's tenant -->
+          <rect class="lnA" x="320" y="44" width="536" height="500" rx="12" fill="none"/>
+          <text class="tt" x="336" y="68">the member's own Zendesk account · nothing hosted by TSANet</text>
+
+          <rect class="bx" x="348" y="96" width="222" height="132" rx="8"/>
+          <text class="tt" x="360" y="118">LAYER 1 · ZAF app</text>
+          <text class="ts" x="360" y="137">sandboxed cross-origin iframe</text>
+          <text class="ts" x="360" y="153">all calls via client.request()</text>
+          <text class="ts" x="360" y="169">domainWhitelist or CORS-blocked</text>
+          <text class="ts" x="360" y="185">no localStorage, no prompt()</text>
+          <text class="tl" x="360" y="205">sidebar + nav-bar deploy screen</text>
+          <text class="tl" x="360" y="219">translations/en.json required</text>
+
+          <rect class="bx-acc" x="612" y="96" width="222" height="132" rx="8"/>
+          <text class="tt" x="624" y="118">LAYER 2 · ZIS</text>
+          <text class="ts" x="624" y="137">integration name GLOBALLY unique</text>
+          <text class="ts" x="624" y="153">job specs + flows (declarative)</text>
+          <text class="ts" x="624" y="169">connection: tsanet_oauth (Entra)</text>
+          <text class="ts" x="624" y="185">connection: zendesk (self, OAuth)</text>
+          <text class="tl" x="624" y="205">API-only — invisible in Admin Center</text>
+          <text class="tl" x="624" y="219">bundle upload needs admin session</text>
+
+          <rect class="bx" x="348" y="264" width="222" height="106" rx="8"/>
+          <text class="tt" x="360" y="286">background.html poller</text>
+          <text class="ts" x="360" y="305">60s loop, ~50min JWT cache</text>
+          <text class="ts" x="360" y="321">lives only while a tab is open</text>
+          <text class="ts" x="360" y="337">inbound sweep + SLA breach tag</text>
+          <text class="ts" x="360" y="353">updatedAfter incremental cursor</text>
+
+          <rect class="bx" x="612" y="264" width="222" height="106" rx="8"/>
+          <text class="tt" x="624" y="286">ZIS inbound webhook</text>
+          <text class="ts" x="624" y="305">generic inbound, Basic auth</text>
+          <text class="ts" x="624" y="321">flow_handle_ping → create ticket</text>
+          <text class="ts" x="624" y="337">flow_forward_comment → note</text>
+          <text class="ts" x="624" y="353">author guard: Agent/Admin only</text>
+
+          <rect class="bx-grn" x="348" y="406" width="486" height="106" rx="8"/>
+          <text class="tt" x="360" y="428">State lives in Zendesk, not in a store we run</text>
+          <text class="ts" x="360" y="447">TSANet Token (text, primary key) · TSANet Status (tagger) · TSANet Partner</text>
+          <text class="ts" x="360" y="463">TSANet Respond By (date) · tsanet_inbound / tsanet_outbound tags</text>
+          <text class="ts" x="360" y="479">note mirror dedups on a tsanet-note-id:&lt;id&gt; marker in the comment body</text>
+          <text class="tl" x="360" y="499">field IDs are discovered by the app's Detect screen, never copied from URLs</text>
+
+          <!-- RIGHT: TSANet -->
+          <rect class="bx-ext" x="900" y="76" width="244" height="180" rx="8"/>
+          <text class="tt" x="914" y="98">TSANet Connect API · /v1</text>
+          <text class="ts" x="914" y="117">partners · forms (documentId)</text>
+          <text class="ts" x="914" y="133">collaboration-requests</text>
+          <text class="ts" x="914" y="149">approval · rejection · closure</text>
+          <text class="ts" x="914" y="165">information-request / -response</text>
+          <text class="ts" x="914" y="181">notes (summary + description)</text>
+          <text class="ts" x="914" y="197">/v2 list: paginated, updatedAfter</text>
+          <text class="ts" x="914" y="213">errors default to 500 — opt into</text>
+          <text class="ts" x="914" y="229">problem+json via Accept</text>
+          <text class="tl" x="914" y="248">prod: connect2.tsanet.org</text>
+
+          <rect class="bx-ext" x="900" y="300" width="244" height="118" rx="8"/>
+          <text class="tt" x="914" y="322">TSANet webhook push</text>
+          <text class="ts" x="914" y="341">POST /v1/webhooks to subscribe</text>
+          <text class="ts" x="914" y="357">callbackAuth: BASIC → ZIS ingest</text>
+          <text class="ts" x="914" y="373">collaboration-request.created</text>
+          <text class="ts" x="914" y="389">note.created</text>
+          <text class="tl" x="914" y="408">v1 bare types · v2 breaks the bundle</text>
+
+          <!-- EDGES -->
+          <path class="ln" d="M141,182 V226" marker-end="url(#zI)"/>
+          <text class="tl" x="150" y="210">agent acts</text>
+
+          <path class="lnA" d="M348,150 H300 V150 H272" marker-end="url(#zA)"/>
+          <circle class="bdg" cx="310" cy="150" r="10"/><text class="bdgT" x="310" y="154" text-anchor="middle">1</text>
+
+          <path class="lnA" d="M266,283 H300 V310 H606" marker-end="url(#zA)"/>
+          <circle class="bdg" cx="310" cy="283" r="10"/><text class="bdgT" x="310" y="287" text-anchor="middle">2</text>
+
+          <path class="lnA" d="M570,140 H894" marker-end="url(#zA)"/>
+          <circle class="bdg" cx="586" cy="140" r="10"/><text class="bdgT" x="586" y="144" text-anchor="middle">3</text>
+
+          <path class="lnA" d="M900,352 H840" marker-end="url(#zA)"/>
+          <circle class="bdg" cx="868" cy="352" r="10"/><text class="bdgT" x="868" y="356" text-anchor="middle">4</text>
+
+          <path class="lnA" d="M834,318 H860 V456 H840" marker-end="url(#zA)"/>
+          <circle class="bdg" cx="860" cy="400" r="10"/><text class="bdgT" x="860" y="404" text-anchor="middle">5</text>
+
+          <path class="ln" d="M348,318 H300 V440 H272" marker-end="url(#zI)"/>
+          <text class="tl" x="286" y="392" text-anchor="end">ticket writes</text>
+
+          <path class="ln" d="M459,228 V260" marker-end="url(#zI)"/>
+          <text class="tl" x="468" y="250">shares settings</text>
+
+          <path class="ln" d="M723,228 V260" marker-end="url(#zI)"/>
+          <text class="tl" x="732" y="250">job specs</text>
+        </svg>
+      </div>
+      <figcaption>Everything inside the outlined box runs in the member's Zendesk account. Accent edges are calls that leave the browser or the tenant; plain edges are local. The green band is the only durable state, and it is Zendesk's, not ours.</figcaption>
+    </figure>
+    <ul class="legend">
+      <li><span class="n">1</span><span><b>Agent actions.</b> The sidebar reads and writes the ticket through ZAF, and reaches TSANet only through <code>client.request()</code> — the ZAF proxy. Direct <code>fetch()</code> to an external host is CORS-blocked unless the domain is in <code>manifest.json</code> → <code>domainWhitelist</code>.</span></li>
+      <li><span class="n">2</span><span><b>Public reply forwarding.</b> A Zendesk trigger fires on a public comment carrying <code>tsanet_inbound</code> or <code>tsanet_outbound</code>, posts to a Basic-auth webhook, and ZIS forwards it to the partner as a note. Internal comments never fire it, which is what keeps the note mirror loop-safe.</span></li>
+      <li><span class="n">3</span><span><b>ZAF → TSANet.</b> Partner search, process form fetch, case submission and all lifecycle actions, proxied through Zendesk.</span></li>
+      <li><span class="n">4</span><span><b>Inbound push.</b> TSANet posts to the ZIS generic inbound webhook using the <code>callbackAuth</code> credentials you registered. <code>flow_handle_ping</code> creates the Zendesk ticket.</span></li>
+      <li><span class="n">5</span><span><b>ZIS → TSANet.</b> The <code>action_ts_*</code> actions call the Connect API through the <code>tsanet_oauth</code> connection, which mints and renews Entra tokens on its own.</span></li>
+    </ul>
+    <div class="note"><strong>Do not rebuild ZIS-based polling.</strong> A scheduled ZIS flow cannot call ZIS management endpoints — the OAuth scope is circular, and the automation payload carries no <code>requestToken</code>, so the flow fails at the first step. Inbound arrives by push; the sweep belongs to the ZAF background poller. This is settled, not an open problem to solve again.</div>
+  </div>
+</section>
+
+<section id="auth">
+  <div class="wrap">
+    <p class="eyebrow">Authentication</p>
+    <h2>OAuth client credentials, and the scope that looks right but isn't</h2>
+    <p>Server-to-server auth is an OAuth 2.0 client-credentials grant against Microsoft Entra. Unlike the legacy <code>POST /v1/login</code> JWT — which expires in about 60 minutes and has to be refreshed by something — the caller re-mints automatically from a long-lived client credential. That is what retired the token-refresh job.</p>
+
+    <pre><code><span class="c"># Mint an Entra token</span>
+POST https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token
+  grant_type=client_credentials
+  client_id={your TSANet-issued client id}
+  client_secret={your TSANet-issued secret}
+  scope=<span class="good-v">{audience-guid}/.default</span>      <span class="c">← bare GUID</span>
+  scope=<span class="bad-v">api://{audience-guid}/.default</span>  <span class="c">← AADSTS500011</span></code></pre>
+
+    <ul class="tight">
+      <li><strong>Use the bare audience GUID.</strong> The <code>api://</code> prefix fails with <code>AADSTS500011</code> — "resource principal not found" — because the Connect app registration publishes no Application ID URI. This looks like a typo and is not; every working scope is bare-GUID form.</li>
+      <li><strong>Service principal provisioning is required.</strong> The API accepts an app-only token only once TSANet has provisioned your service principal's object ID. That provisioning is also what maps your tokens to your member company. Send TSANet your service principal OID to be onboarded.</li>
+      <li><strong>No <code>requestedAccessTokenVersion</code> change is needed.</strong> The API accepts the default v1-format Entra token with a bare-GUID <code>aud</code> claim.</li>
+      <li><strong>Store secrets verbatim.</strong> Entra client secrets are random strings that can begin with punctuation — a leading <code>.</code> has been seen in production. "Cleaning" the value breaks authentication with <code>AADSTS7000215</code>. If the same secret works directly but fails through ZIS, the stored copy is corrupted: re-PATCH it and watch for paste artifacts.</li>
+    </ul>
+
+    <h3>Error responses have two modes, and the default is HTTP 500</h3>
+    <p>This is permanent, documented behaviour rather than a bug to work around. With no <code>Accept</code> header — or <code>application/json</code> alone — most business-rule, validation and authorization rejections return <strong>HTTP 500</strong> with a <code>{"message": "..."}</code> body, locked in for backward compatibility with existing clients.</p>
+    <pre><code><span class="c"># Recommended for every new integration</span>
+Accept: application/json, application/problem+json</code></pre>
+    <p>That opts into RFC 7807: the same rejections return their documented status (400/401/403/404/409/422) with a <code>{type, title, status, detail, instance}</code> body. Branch on status code and read the message from <code>detail</code>, falling back to <code>title</code>. List <code>application/json</code> <em>first</em> — with <code>application/problem+json</code> alone, successful 200 responses also come back labelled <code>Content-Type: application/problem+json</code>, which confuses content-type-keyed consumers.</p>
+  </div>
+</section>
+
+<section id="lifecycle">
+  <div class="wrap">
+    <p class="eyebrow">Lifecycle</p>
+    <h2>Case states, and what the SLA actually measures</h2>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 800 230" style="min-width:700px" role="img" aria-labelledby="lcT lcD">
+          <title id="lcT">TSANet case lifecycle as seen by the Zendesk connector</title>
+          <desc id="lcD">A case moves from Open to Information or Accepted, and then to Closed. Rejected is a terminal state reached from Open or Information. The SLA clock runs only while the case is Open and unresponded.</desc>
+          <defs><marker id="lcA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+
+          <rect x="20" y="46" width="150" height="52" rx="6" fill="rgba(204,78,11,.08)" stroke="var(--orange)" stroke-width="1.5"/>
+          <text class="tt" x="95" y="70" text-anchor="middle">OPEN</text>
+          <text class="tl" x="95" y="88" text-anchor="middle" style="fill:var(--orange);font-weight:600">responded: false</text>
+
+          <rect class="bx" x="250" y="12" width="150" height="52" rx="6"/>
+          <text class="tt" x="325" y="36" text-anchor="middle">INFORMATION</text>
+          <text class="tl" x="325" y="54" text-anchor="middle">clock stopped</text>
+
+          <rect class="bx" x="250" y="112" width="150" height="52" rx="6"/>
+          <text class="tt" x="325" y="136" text-anchor="middle">ACCEPTED</text>
+          <text class="tl" x="325" y="154" text-anchor="middle">clock stopped</text>
+
+          <rect class="bx-grn" x="490" y="112" width="150" height="52" rx="6"/>
+          <text class="tt" x="565" y="136" text-anchor="middle">CLOSED</text>
+          <text class="tl" x="565" y="154" text-anchor="middle">submitter only</text>
+
+          <rect class="bx" x="490" y="12" width="150" height="52" rx="6" style="stroke:var(--red)"/>
+          <text class="tt" x="565" y="36" text-anchor="middle" style="fill:var(--red)">REJECTED</text>
+          <text class="tl" x="565" y="54" text-anchor="middle">terminal</text>
+
+          <path class="ln" d="M170,60 C205,60 215,40 244,38" marker-end="url(#lcA)"/>
+          <text class="tl" x="196" y="34">info request</text>
+          <path class="ln" d="M170,86 C205,86 215,132 244,138" marker-end="url(#lcA)"/>
+          <text class="tl" x="188" y="118">approval</text>
+          <path class="ln" d="M400,138 H484" marker-end="url(#lcA)"/>
+          <text class="tl" x="442" y="130" text-anchor="middle">closure</text>
+          <path class="ln" d="M400,38 H484" marker-end="url(#lcA)"/>
+          <text class="tl" x="442" y="30" text-anchor="middle">rejection</text>
+          <path class="ln" d="M325,64 V108" marker-end="url(#lcA)"/>
+          <text class="tl" x="334" y="90">response</text>
+
+          <text class="tl" x="20" y="196" style="fill:var(--orange);font-weight:600">SLA window</text>
+          <path d="M20,206 H170" stroke="var(--orange)" stroke-width="2"/>
+          <text class="tl" x="182" y="210">respondBy tracks the initial acknowledgment only. Once responded is true, TSANet stops tracking — so must you.</text>
+        </svg>
+      </div>
+      <figcaption>The <code>responded</code> flag, not the status name, is the gate. <code>false</code> means the acknowledgment clock is running; <code>true</code> means the case has been accepted, rejected, or had information requested.</figcaption>
+    </figure>
+    <ul class="tight">
+      <li><strong>Gate every SLA display and breach check on <code>responded === false</code>.</strong> Showing a countdown on an ACCEPTED case is showing a deadline TSANet is no longer tracking.</li>
+      <li><strong>Only the submitting company can close.</strong> Calling <code>/closure</code> as the receiver returns an error, so show the Close action only when <code>direction === 'OUTBOUND'</code>.</li>
+      <li><strong><code>token</code> is the primary key</strong> — save it the moment a case is created. The numeric <code>id</code> exists but every API path uses <code>token</code>.</li>
+      <li><strong><code>PENDINGACTION</code></strong> is an additional status the <code>/v2</code> list endpoints return and filter on; it surfaces cases awaiting an action from your side.</li>
+      <li><strong>Zendesk date fields are <code>YYYY-MM-DD</code> only.</strong> An ISO datetime like <code>2026-05-08T14:00:00Z</code> is silently rejected — truncate <code>respondBy</code> with <code>.substring(0, 10)</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="notes">
+  <div class="wrap">
+    <p class="eyebrow">Note visibility</p>
+    <h2>Three audiences, and a composer that only offers two</h2>
+    <p>The governing rule is simple: <strong>only public content reaches the partner; internal notes stay in Zendesk.</strong> The complication is that a note has three possible audiences and Zendesk's native composer is binary — an app cannot add a third option to the built-in Public reply / Internal note toggle.</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 366" style="min-width:900px" role="img" aria-label="Three note visibilities: Internal stays in Zendesk only; Partner-only posts to TSANet with no public comment and mirrors back as an internal record; Public posts a public Zendesk comment which a trigger forwards to the partner.">
+          <defs><marker id="nvA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+
+          <rect class="bx" x="20" y="20" width="180" height="46" rx="6"/>
+          <text class="tt" x="110" y="41" text-anchor="middle">Internal</text>
+          <text class="tl" x="110" y="58" text-anchor="middle">the default</text>
+
+          <rect class="bx-acc" x="20" y="140" width="180" height="46" rx="6"/>
+          <text class="tt" x="110" y="161" text-anchor="middle">Partner only</text>
+          <text class="tl" x="110" y="178" text-anchor="middle">ZAF dialog or field action</text>
+
+          <rect class="bx-grn" x="20" y="260" width="180" height="46" rx="6"/>
+          <text class="tt" x="110" y="281" text-anchor="middle">Public</text>
+          <text class="tl" x="110" y="298" text-anchor="middle">reaches the end customer</text>
+
+          <!-- internal -->
+          <path class="ln" d="M200,43 H414" marker-end="url(#nvA)"/>
+          <rect class="bx-ext" x="420" y="20" width="230" height="46" rx="6"/>
+          <text class="ts" x="435" y="41">internal Zendesk comment</text>
+          <text class="tl" x="435" y="58">never POSTed to TSANet</text>
+          <text class="tl" x="700" y="47" style="fill:var(--red);font-weight:600">✕ partner never sees it</text>
+
+          <!-- partner only -->
+          <path class="ln" d="M200,163 H414" marker-end="url(#nvA)"/>
+          <rect class="bx-ext" x="420" y="140" width="230" height="46" rx="6"/>
+          <text class="ts" x="435" y="161">POST /notes to the partner</text>
+          <text class="tl" x="435" y="178">no public comment written</text>
+          <path class="ln" d="M650,163 H784" marker-end="url(#nvA)"/>
+          <rect class="bx" x="790" y="140" width="190" height="46" rx="6"/>
+          <text class="ts" x="805" y="161">mirrors back as internal</text>
+          <text class="tl" x="805" y="178">agent keeps a record</text>
+
+          <!-- public -->
+          <path class="ln" d="M200,283 H414" marker-end="url(#nvA)"/>
+          <rect class="bx-ext" x="420" y="260" width="230" height="46" rx="6"/>
+          <text class="ts" x="435" y="281">public Zendesk comment ONLY</text>
+          <text class="tl" x="435" y="298">the app must not also POST</text>
+          <path class="ln" d="M650,283 H784" marker-end="url(#nvA)"/>
+          <rect class="bx" x="790" y="260" width="190" height="46" rx="6"/>
+          <text class="ts" x="805" y="281">trigger forwards to partner</text>
+          <text class="tl" x="805" y="298">Agent/Admin authors only</text>
+
+          <text class="tl" x="20" y="334" style="fill:var(--orange);font-weight:600">Single-path rule</text>
+          <text class="tl" x="120" y="334">a public note must not ALSO POST /notes — the partner would receive it twice: the</text>
+          <text class="tl" x="120" y="350">explicit POST, plus the trigger re-forwarding the same public comment.</text>
+        </svg>
+      </div>
+      <figcaption>Partner-only is reachable only through the ZAF Add Note dialog or the TSANet Action field — never through Zendesk's native reply menu, which will never show it. Agents have to be trained to use those.</figcaption>
+    </figure>
+    <ul class="tight">
+      <li><strong>The author guard fails closed.</strong> Forwarding happens only when the comment author's role is Agent or Admin; an end-user public reply never forwards. Note that <code>{{current_user.role}}</code> renders the literal <code>Admin</code>, not <code>Administrator</code>, and ZIS <code>Choice</code> supports only <code>StringEquals</code> — so list every accepted value explicitly, lowercase variants included.</li>
+      <li><strong>The mirror is loop-safe by construction.</strong> It writes <em>internal</em> comments, which never re-fire the <em>public</em>-comment trigger.</li>
+      <li><strong>Echo suppression:</strong> the mirror skips a note that is self-authored <em>and</em> matches an existing public comment, so a forwarded reply doesn't bounce back as a redundant internal copy. Partner notes are never suppressed, even on a text collision.</li>
+      <li><strong>Dedup on a marker, not on text.</strong> Every mirrored comment carries <code>tsanet-note-id:&lt;id&gt;</code> in the body. The native field-action path writes a receipt comment with the same marker, so there is exactly one internal record whether or not ZAF is installed.</li>
+      <li><strong>Notes come back as HTML.</strong> Strip <code>summary</code> and <code>description</code> to plain text before display. The process form's <code>adminNote</code> is the exception — see below.</li>
+    </ul>
+
+    <h3>The Add Note payload</h3>
+    <p><code>summary</code> is required and capped at 500 characters; <code>description</code> is optional and capped at 5,000. The TSANet web UI renders both as separate labelled sections, so posting identical values shows the text twice — it looks like a duplication bug and is intentional rendering. Present two fields, Subject and Details, and only include <code>description</code> if the agent filled it in. Never auto-copy one into the other.</p>
+  </div>
+</section>
+
+<section id="zaf">
+  <div class="wrap">
+    <p class="eyebrow">ZAF constraints</p>
+    <h2>What the sandbox takes away</h2>
+    <p>ZAF apps run in cross-origin sandboxed iframes inside Zendesk. Three consequences drive most of the app's shape.</p>
+    <div class="cols">
+      <ul class="tight">
+        <li><strong><code>prompt()</code> and <code>confirm()</code> are silently blocked.</strong> Not an error — the call simply does nothing, which presents as a button that does nothing when clicked. Every modal must be custom inline HTML.</li>
+        <li><strong>Every API call goes through <code>client.request()</code>.</strong> Direct <code>fetch()</code> or <code>XMLHttpRequest</code> to an external domain is CORS-blocked unless that domain is listed in <code>manifest.json</code> → <code>domainWhitelist</code>.</li>
+        <li><strong>No <code>localStorage</code>, no <code>sessionStorage</code>.</strong> State lives in memory for the session, or in Zendesk ticket fields for anything durable.</li>
+        <li><strong><code>client.set()</code> does not write.</strong> It queues a change in the ZAF form state, applied when the agent saves the ticket. For a guaranteed write with no agent action, call <code>PUT /api/v2/tickets/{id}.json</code> through <code>client.request()</code>.</li>
+      </ul>
+      <ul class="tight">
+        <li><strong>There is no manifest property that makes a panel fit its content.</strong> <code>flexible</code> governs width on the ticket sidebar; <code>flexible_height</code> is not a ZAF property at all and is silently ignored. Height comes only from <code>client.invoke('resize')</code>.</li>
+        <li><strong>Measure, never assert.</strong> Every panel state should measure <code>document.body.scrollHeight</code> after content is in the DOM — measuring while the panel is still a spinner is what makes hardcoded constants look necessary.</li>
+        <li><strong>One height cap for every state.</strong> Measured at the 320px sidebar width across 110 live partner forms: 41% need more than 800px and the tallest is 1409px, so an 800px cap truncates most of the member base the moment one label wraps.</li>
+        <li><strong><code>translations/en.json</code> is mandatory</strong> in the ZIP even with no i18n strings — Zendesk rejects the upload without it. A 128×128 transparent <code>logo.png</code> plus an <code>icon</code> manifest entry is what puts the app in the tray.</li>
+      </ul>
+    </div>
+    <div class="note"><strong>Deploy by ZIP upload, not by API.</strong> <code>PUT /api/v2/apps/{id}.json</code> is broken — it returns a Ruby "no implicit conversion of nil into String" error. Build the ZIP and upload through Admin Center → Apps and Integrations → Zendesk Support Apps → Update. Settings, credentials and field IDs survive the update.</div>
+  </div>
+</section>
+
+<section id="setup">
+  <div class="wrap">
+    <p class="eyebrow">Setup</p>
+    <h2>The path through installation</h2>
+    <div class="cols">
+      <div>
+        <h3>Custom ticket fields</h3>
+        <div class="twrap">
+          <table>
+            <thead><tr><th>Field</th><th>Type</th></tr></thead>
+            <tbody>
+              <tr><td>TSANet Token</td><td>Text — primary key</td></tr>
+              <tr><td>TSANet Tokens Multi</td><td>Text — optional</td></tr>
+              <tr><td>TSANet Status</td><td>Dropdown (tagger)</td></tr>
+              <tr><td>TSANet Partner</td><td>Text</td></tr>
+              <tr><td>TSANet Respond By</td><td>Date</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:13.5px"><strong>Do not copy field IDs out of Admin Center URLs.</strong> Create the fields, then open the app from the left nav bar and use <strong>Detect field IDs</strong> → <strong>Apply</strong>. It matches by title, shows the mapping before writing, and writes the IDs into its own settings. It refuses to guess when two fields share a title or a title match has the wrong type — fix the field and re-run.</p>
+      </div>
+      <div>
+        <h3>Order of operations</h3>
+        <ul class="tight">
+          <li>Get API credentials and service-principal provisioning from TSANet</li>
+          <li>Create the five custom ticket fields</li>
+          <li>Register a ZIS integration under <strong>your own name</strong> (see below)</li>
+          <li>Create the <code>tsanet_oauth</code> (Entra) and <code>zendesk</code> (self) connections</li>
+          <li>Deploy the ZIS bundle from the app's nav-bar screen — no API token needed</li>
+          <li>Run Detect field IDs → Apply</li>
+          <li>Register inbound push: two calls, Zendesk then TSANet</li>
+          <li>Create the SLA breach trigger and the active-collaborations view</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>The ZIS integration name is globally unique across all of Zendesk</h3>
+    <p>This is documented vendor behaviour, and it is the single most expensive thing on this page to learn at runtime. Register a name and no other Zendesk customer can ever use it. <code>tsanet_connect</code> is already claimed, so <strong>every member needs their own name</strong> — the app exposes it as the <code>tsanet_integration_name</code> setting (charset <code>^[a-z0-9_-]{1,64}$</code>).</p>
+    <pre><code>POST /api/services/zis/registry/{your_integration_name}
+<span class="bad-v">400 {"message":"the integration: tsanet_connect is not available for upsert by this account"}</span>
+<span class="c"># Not a permissions fault. Not retryable. Pick your own name.</span></code></pre>
+    <ul class="tight">
+      <li><strong>Use the OAuth client ZIS creates for you.</strong> The registry create returns a <code>zendesk_oauth_client</code> object with identifier <code>zis_&lt;integration-name&gt;</code>; its numeric id is what mints ZIS tokens. A hand-created client is refused on every ZIS management endpoint with <code>401 Authorization failed due to integration mismatch</code>.</li>
+      <li><strong>Renaming does not retire the old integration.</strong> Its job specs stay installed and keep intercepting the same events, so both act on every inbound collaboration and tickets get created twice. Connections are integration-scoped too, so both have to be recreated under the new name.</li>
+      <li><strong>ZIS custom integrations are invisible in Admin Center.</strong> Verify over the API — this is by design, not a broken install.</li>
+    </ul>
+
+    <h3>Inbound push registration is two calls, and the version matters</h3>
+    <pre><code><span class="c"># 1. On Zendesk — returns ingest URL + Basic credentials, shown once</span>
+POST /api/services/zis/inbound_webhooks/generic/{integration}
+
+<span class="c"># 2. On TSANet — subscribe TSANet to that URL</span>
+POST <span class="good-v">/v1/webhooks</span>
+{ "callbackUrl": "&lt;ingest URL&gt;",
+  "callbackAuth": { "type": "BASIC", "username": "...", "password": "..." } }</code></pre>
+    <p>Omit <code>eventTypes</code> — the default covers both <code>collaboration-request.created</code> and <code>note.created</code>, which is what the bundle expects. Save the response <code>id</code> for later management and the <code>secret</code> (the HMAC key, returned only at creation).</p>
+    <div class="note"><strong><code>/v2/webhooks</code> silently breaks the bundle.</strong> Both endpoints accept a subscription, so this fails invisibly. <code>/v2</code> delivers CloudEvents with prefixed type strings (<code>org.tsanet.connect.collaboration-request.created</code>), while the bundle's guard matches the bare <code>collaboration-request.created</code> and falls through to a no-op. Every delivery returns 200 and creates nothing, with no error anywhere. Use <code>/v1</code> until the CloudEvents migration ships.</div>
+  </div>
+</section>
+
+<section id="gotchas">
+  <div class="wrap">
+    <p class="eyebrow">Platform gotchas</p>
+    <h2>Things that cost real debugging time</h2>
+
+    <h3>Zendesk side</h3>
+    <div class="note" style="border-left-color:var(--red)"><strong>Tag POST is not additive, whatever its name says.</strong> Zendesk documents <code>POST /api/v2/tickets/{id}/tags.json</code> as "Add Tags" and it <strong>replaces the ticket's entire tag set</strong>. Because tagger dropdown fields are stored as tags, replacing the tags also blanks those fields — which is how a status field goes empty on a breached ticket. <code>additional_tags</code> is not an escape hatch: on the single-ticket update endpoint it returns 200 and writes nothing, with no audit event.</div>
+    <pre><code><span class="c"># The pattern that works</span>
+GET  /api/v2/tickets/{id}.json
+PUT  /api/v2/tickets/{id}.json
+{ "ticket": { "tags": [...existing, "new_tag"] },
+  "safe_update": true,
+  "updated_stamp": "&lt;ticket.updated_at&gt;" }
+<span class="c"># A stale stamp returns 409 UpdateConflict and writes nothing —
+# a concurrent edit fails loudly instead of being clobbered.</span></code></pre>
+    <ul class="tight">
+      <li><strong>Verify a tag write from the ticket audit, never from the API response.</strong> Both failing calls above return success. Recovery for tags already lost: <code>GET /api/v2/tickets/{id}/audits.json</code>, find events with <code>field_name: tags</code>, and <code>previous_value</code> holds the replaced list.</li>
+      <li><strong>Trigger field names:</strong> use <code>current_tags</code>, not <code>tags</code>, for tag conditions, and <code>assignee_id</code>, not <code>assignee</code>, for recipients. Wrong values return "Invalid rule target" — or fail silently.</li>
+      <li><strong>The Views API silently ignores custom field columns</strong> in <code>execution.columns</code>. Add them by hand in Admin Center after creating the view.</li>
+      <li><strong>Internal comments go through the ticket endpoint:</strong> <code>PUT /api/v2/tickets/{id}.json</code> with <code>ticket.comment.public: false</code>. The Comments endpoint does not support the internal flag the same way.</li>
+      <li><strong>ZIS auth failures discriminate cleanly — read the exact string.</strong> <code>401 integration mismatch</code> means the credential is valid but was minted from the wrong OAuth client, or the integration in the path is not registered. <code>401 Authentication failed</code> means the bearer is missing, malformed or expired. <code>403 API token is not supported</code> means an API token was sent where a ZIS OAuth token is required.</li>
+      <li><strong>Registry create is admin-only</strong>, and client-credentials tokens act as the user their OAuth client was created under — so create that client while signed in as an administrator.</li>
+      <li><strong>Hiding the app</strong> is an install-time role/group restriction, and it hides every surface at once: sidebar, nav entry and background poller. The <code>allowed_action_roles</code> setting is defence in depth for who can invoke actions, not a way to hide anything. Neither is a security boundary — the TSANet API credential is the real control.</li>
+    </ul>
+
+    <h3>TSANet side</h3>
+    <ul class="tight">
+      <li><strong><code>engineerEmail</code> is required on approval and undocumented.</strong> Omitting it returns "Error processing request" with no useful detail. It must also be from your company's TSANet-registered domain — an agent's own Zendesk email fails domain validation, so use the dedicated API user's address.</li>
+      <li><strong>SELECT field options are newline-delimited, not comma-delimited.</strong> The process form's <code>customFields[].options</code> separates choices with CRLF, and the structured <code>selections[]</code> array is frequently empty. Splitting on commas collapses every choice into one option. Parse <code>selections[].value</code> first, then split on newlines, then fall back to commas.</li>
+      <li><strong><code>adminNote</code> is authored HTML to render, not strip.</strong> The form's "Partner instructions" field carries formatted text and links the partner wrote. Escaping shows raw tags; stripping loses the links. Sanitize against a tag allowlist and render, forcing links to <code>target="_blank" rel="noopener noreferrer"</code> with <code>http(s):</code>-only hrefs. This is the one field that is the exception to stripping HTML.</li>
+      <li><strong><code>documentId</code> is required on submission</strong> and must be fetched fresh from the form endpoint every time. Vendors update their forms; do not cache it long-term.</li>
+      <li><strong>Partner search returns an array.</strong> A company with multiple departments returns multiple results — use <code>departmentId</code> for precise routing when it is available.</li>
+      <li><strong>There is no <code>/v1/cases</code> endpoint.</strong> It is a common wrong guess that returns 404. The list endpoints are <code>/v2/collaboration-requests</code> (paginated, returns <code>{content:[...]}</code>) and <code>/v2/collaboration-requests/list</code> (plain array, supports <code>updatedAfter</code>).</li>
+      <li><strong><code>testSubmission: true</code></strong> submits without creating real SLA timers or partner notifications.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="clocks">
+  <div class="wrap">
+    <p class="eyebrow">Deprecation clocks</p>
+    <h2>Dates worth putting in your calendar</h2>
+    <p>Two independent retirement schedules affect this connector. Neither is a TSANet decision, and both have hard dates.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Date</th><th>What happens</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td>2026-07-28</td><td>Zendesk blocks API token creation for new accounts</td><td>New installs cannot mint an API token — use the app's deploy screen, which runs on the admin session</td></tr>
+          <tr><td>2026-10-27</td><td>Zendesk blocks API token creation for all accounts</td><td>Any runbook step that says "create an API token" stops working</td></tr>
+          <tr><td>2027-01-01</td><td><code>x-sunset</code> on TSANet <code>/v1/webhooks</code></td><td>The CloudEvents migration to <code>/v2</code> must ship before this</td></tr>
+          <tr><td>2027-04-30</td><td>All existing Zendesk API tokens deactivate</td><td>Any connection still using <code>basic_auth</code> with an API token breaks</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="tight">
+      <li><strong>The <code>zendesk</code> connection is now OAuth, not basic auth.</strong> It runs a client-credentials grant against the member's own instance, with <code>token_url</code> pointed at <code>https://{subdomain}.zendesk.com/oauth/tokens</code>. Tokens from clients created on or after 2026-04-30 expire in 30 minutes, so a static bearer connection is not viable — only the auto-renewing OAuth type works.</li>
+      <li><strong>The backing client must be <code>kind: "confidential"</code> at creation.</strong> The grant rejects public clients with <code>unauthorized_client</code>, and changing <code>kind</code> afterwards regenerates the secret while only ever displaying it truncated.</li>
+      <li><strong>Minimal scope is <code>read tickets:write</code>.</strong> <code>tickets:read</code> alone breaks search — <code>/api/v2/search.json</code> returns 403 under it, and there is no <code>search:read</code> scope.</li>
+      <li><strong>Migrating an existing install:</strong> connection names are unique across types, so delete the old <code>basic_auth</code> connection named <code>zendesk</code> and create the OAuth one under the same name. Zero bundle changes.</li>
+    </ul>
+    <div class="note"><strong>Bundle upload is the one endpoint that rejects OAuth outright.</strong> <code>POST /registry/{integration}/bundles</code> returns 401 for all OAuth bearers. It accepts an API token or an authenticated admin session — and since API tokens are on the clock above, the admin-session path is the documented one. That is exactly what the app's nav-bar deploy screen uses, so no member should be minting a token for this.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
