@@ -81,7 +81,8 @@
   .comm-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden}
   .comm-item{display:flex;gap:14px;padding:16px 20px;border-bottom:1px solid var(--line);align-items:baseline}
   .comm-item:last-child{border-bottom:none}
-  .comm-item:hover{background:var(--paper)}
+  a.comm-item:hover{background:var(--paper)}
+  div.comm-item .comm-cat{color:var(--mute)}
   .comm-cat{font-family:var(--mono);font-size:11px;color:var(--blue);white-space:nowrap;min-width:88px}
   .comm-item b{font-weight:600;font-size:14px;display:block}
   .comm-item small{color:#8695AB;font-size:12px}
@@ -111,7 +112,7 @@
     <p class="lede">The engineering home for TSANet Connect: connectors, gateways, the REST API, and the design documents behind the platform. Built by the members who run multi-vendor support, for the members who automate it.</p>
     <div class="cta-row">
       <a class="btn btn-primary" href="#api">Explore the API</a>
-      <a class="btn btn-ghost" href="#community"><code>gh</code> Join the discussion</a>
+      <a class="btn btn-ghost" href="#connectors">Browse the connectors</a>
     </div>
    </div>
    <img class="hero-mark" src="assets/TSANet-Connect-Icon_2025_vertical_Transparent.png" alt="TSANet Connect">
@@ -296,20 +297,23 @@
     <div class="sec-head">
       <div>
         <h2>Community</h2>
-        <p>Discussion will run on GitHub Discussions in the tsanetgit org — no separate accounts, no separate platform.</p>
+        <p>Discussion will run on GitHub Discussions — no separate accounts, no separate platform. The space is being set up now; these are the categories it will open with.</p>
       </div>
-      <a class="sec-link" href="https://github.com/orgs/tsanetgit/discussions">Open Discussions →</a>
+      <a class="sec-link" href="mailto:membership@tsanet.org">membership@tsanet.org →</a>
     </div>
     <div class="comm">
       <div class="comm-list">
-        <a class="comm-item" href="https://github.com/orgs/tsanetgit/discussions"><span class="comm-cat">Q&amp;A</span><span><b>Ask an implementation question</b><small>Auth, process forms, lifecycle transitions, webhook delivery</small></span></a>
-        <a class="comm-item" href="https://github.com/orgs/tsanetgit/discussions"><span class="comm-cat">Show &amp; tell</span><span><b>Share what you built</b><small>Custom integrations, translation services, platform findings</small></span></a>
-        <a class="comm-item" href="https://github.com/orgs/tsanetgit/discussions"><span class="comm-cat">Ideas</span><span><b>Propose a change to the API</b><small>Gaps, papercuts, and behaviour that surprised you</small></span></a>
+        <div class="comm-item"><span class="comm-cat">Q&amp;A</span><span><b>Ask an implementation question</b><small>Auth, process forms, lifecycle transitions, webhook delivery</small></span></div>
+        <div class="comm-item"><span class="comm-cat">Troubleshooting</span><span><b>Something isn't working</b><small>Silent failures, signature mismatches, sync that stopped</small></span></div>
+        <div class="comm-item"><span class="comm-cat">Show &amp; tell</span><span><b>Share what you built</b><small>Custom integrations, translation services, platform findings</small></span></div>
+        <div class="comm-item"><span class="comm-cat">Ideas</span><span><b>Propose a change to the API</b><small>Gaps, papercuts, and behaviour that surprised you</small></span></div>
+        <div class="comm-item"><span class="comm-cat">Wish list</span><span><b>Which connector next?</b><small>Tell us the platform your team actually runs on</small></span></div>
         <a class="comm-item" href="mailto:membership@tsanet.org"><span class="comm-cat">Membership</span><span><b>Early access &amp; onboarding</b><small>Credentials, pilot instances, connector early-access programmes</small></span></a>
       </div>
       <div>
-        <p style="font-size:14.5px;color:var(--slate);margin-bottom:16px">No threads yet — this is a new space, and the categories above are where things will land. If you hit something on this portal that is wrong, missing, or surprised you in production, that is the most useful first post anyone could make.</p>
-        <a class="btn btn-primary" href="https://github.com/orgs/tsanetgit/discussions">Start a discussion</a>
+        <p style="font-size:14.5px;color:var(--slate);margin-bottom:16px">The discussion space is not open to members yet — it is being built alongside this portal. Until it is, <b>membership@tsanet.org</b> is the working channel for credentials, early access, and anything on this site that turns out to be wrong or missing.</p>
+        <p style="font-size:14.5px;color:var(--slate);margin-bottom:16px">The wish list is the one we most want answered. Which platform your team runs on is the single most useful thing you can tell us, and it is what decides which connector gets built next.</p>
+        <a class="btn btn-primary" href="mailto:membership@tsanet.org">Get in touch</a>
       </div>
     </div>
   </div>
