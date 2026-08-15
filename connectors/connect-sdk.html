@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect SDK — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink);margin:16px 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  .c{color:var(--mute)}
+  .k{color:var(--blue);font-weight:600}
+  .obj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:12px;margin-top:18px}
+  .obj{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:16px 18px}
+  .obj h4{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--deep);margin-bottom:6px}
+  .obj p{font-size:13px;color:var(--slate);margin:0;line-height:1.55}
+  .status-band{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:12px;padding:22px 26px;margin-top:24px}
+  .status-band h3{margin:0 0 10px;font-size:19px}
+  .status-band p{max-width:78ch}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors" aria-current="page">Connectors</a>
+      <a href="../index.html#api">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / <a href="../index.html#connectors">Connectors</a> / Connect SDK</div>
+    <h1>Connect SDK</h1>
+    <p class="lede">A Java client for the TSANet Connect API, generated from the API's own OpenAPI specification and wrapped in eight typed facades — plus a console app, an attachment receiver and a web demo that show it working end to end. If you are building a custom integration on the JVM, this is the shortest path that is not hand-rolled HTTP.</p>
+    <div class="meta-row">
+      <span><b>Version</b> v0.1.0</span>
+      <span><b>Released</b> 2026-08-11</span>
+      <span><b>Language</b> Java 21</span>
+      <span><b>Repo</b> tsanetgit/Connect_SDK</span>
+    </div>
+    <div class="toc">
+      <a href="#what">What it is</a>
+      <a href="#surface">The eight facades</a>
+      <a href="#layers">How it fits together</a>
+      <a href="#modules">Modules</a>
+      <a href="#getting">Getting it</a>
+      <a href="#auth">Authentication</a>
+      <a href="#storage">Local store</a>
+      <a href="#languages">Other languages</a>
+      <a href="#when">When to reach for it</a>
+    </div>
+  </div>
+</header>
+
+<section id="what">
+  <div class="wrap">
+    <p class="eyebrow">Status</p>
+    <h2>What it is, and what it is not yet</h2>
+    <div class="status-band">
+      <h3>Read the version number before you plan around it</h3>
+      <p>This is <strong>v0.1.0</strong>, released 2026-08-11, and the repository describes itself as a demonstration of integration with the TSANet API in Java. That is not a disclaimer to skim past: it is a real, working, tested client — the TSANet-built gateway consumes it in production paths — but it is early, the surface can still move, and there is one release to date.</p>
+      <p style="margin-top:12px">Treat it as the reference implementation of how to talk to the Connect API correctly, and as a dependency you pin rather than float.</p>
+    </div>
+    <p style="margin-top:22px">The value is not that it saves you HTTP calls — it is that the Connect API has a number of behaviours that are easy to get wrong on a first integration, and the client encodes the right answers. Request shapes are validated before they go out, the process-form field types are modelled rather than guessed at, both authentication modes are handled behind one session object, and webhook payloads and attachment configuration have types instead of being maps of strings.</p>
+  </div>
+</section>
+
+<section id="surface">
+  <div class="wrap">
+    <p class="eyebrow">API surface</p>
+    <h2>Eight facades over one session</h2>
+    <p>Everything hangs off <code>TsaNetApi</code> and <code>TsaNetApiSession</code>. The facades divide the API the way the API actually divides, which makes them easy to hold in your head:</p>
+    <div class="obj-grid">
+      <div class="obj"><h4>AuthFacade</h4><p>Login and session establishment across both supported credential modes.</p></div>
+      <div class="obj"><h4>PartnersFacade</h4><p>Partner search and selection, plus the process-form template for a chosen partner.</p></div>
+      <div class="obj"><h4>CollaborationRequestsFacade</h4><p>The core lifecycle: create, fetch, list, approve, reject, request and send information, close.</p></div>
+      <div class="obj"><h4>CaseNotesFacade</h4><p>Notes on a case, in both directions.</p></div>
+      <div class="obj"><h4>CaseResponsesFacade</h4><p>The formal response records — approvals, rejections, information exchanges.</p></div>
+      <div class="obj"><h4>WebhooksFacade</h4><p>Subscription management plus inbound event and delivery types.</p></div>
+      <div class="obj"><h4>AttachmentsFacade</h4><p>Attachment configuration, forwarding, and the HTTPS push arrangement.</p></div>
+      <div class="obj"><h4>UserFacade</h4><p>Identity and company context for the authenticated account.</p></div>
+    </div>
+    <p style="margin-top:18px">Alongside the facades sit typed DTOs for every payload — form templates and field types, case status, notes, responses, webhook deliveries, attachment configuration — and a validation layer that checks a request before it is sent rather than letting the API reject it. On an API where a validation failure may arrive as an HTTP 500 unless you opt into <a href="zendesk.html#auth">problem+json</a>, catching the problem client-side is worth more than it sounds.</p>
+  </div>
+</section>
+
+<section id="layers">
+  <div class="wrap">
+    <p class="eyebrow">Construction</p>
+    <h2>Generated from the spec, wrapped by hand</h2>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1020 330" style="min-width:900px" role="img" aria-label="Layering: your integration calls the eight facades, which call a generated OpenAPI client, which calls the TSANet Connect API. The OpenAPI specification is a build-time input to code generation, not a runtime dependency.">
+          <defs><marker id="sdA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+
+          <rect class="bx-ext" x="20" y="126" width="180" height="70" rx="8"/>
+          <text class="tt" x="110" y="152" text-anchor="middle">Your integration</text>
+          <text class="tl" x="110" y="172" text-anchor="middle">JVM, Java 21</text>
+
+          <path class="ln" d="M200,161 H256" marker-end="url(#sdA)"/>
+
+          <rect class="bx-acc" x="262" y="96" width="230" height="130" rx="8"/>
+          <text class="tt" x="276" y="120">connect-library</text>
+          <text class="ts" x="276" y="140">TsaNetApi · TsaNetApiSession</text>
+          <text class="ts" x="276" y="158">eight typed facades</text>
+          <text class="ts" x="276" y="176">DTOs + request validation</text>
+          <text class="ts" x="276" y="194">auth modes · account registry</text>
+          <text class="tl" x="276" y="214">hand-written — the stable surface</text>
+
+          <path class="ln" d="M492,161 H548" marker-end="url(#sdA)"/>
+
+          <rect class="bx" x="554" y="110" width="210" height="102" rx="8"/>
+          <text class="tt" x="568" y="134">Generated client</text>
+          <text class="ts" x="568" y="154">openapi-generator output</text>
+          <text class="ts" x="568" y="172">regenerated at build time</text>
+          <text class="tl" x="568" y="194">not consumed directly</text>
+
+          <path class="ln" d="M764,161 H820" marker-end="url(#sdA)"/>
+
+          <rect class="bx-ext" x="826" y="126" width="174" height="70" rx="8"/>
+          <text class="tt" x="913" y="152" text-anchor="middle">Connect API</text>
+          <text class="tl" x="913" y="172" text-anchor="middle">/v1</text>
+
+          <!-- spec as build input -->
+          <rect class="bx" x="554" y="252" width="210" height="62" rx="8" style="stroke:var(--orange);stroke-dasharray:5 4"/>
+          <text class="ts" x="568" y="276" style="fill:var(--orange)">openapi.yaml</text>
+          <text class="tl" x="568" y="294">build-time input, private repo</text>
+          <path class="ln" d="M659,248 V218" marker-end="url(#sdA)"/>
+          <text class="tl" x="668" y="238">codegen</text>
+
+          <text class="tl" x="20" y="276">The spec is a build input,</text>
+          <text class="tl" x="20" y="292">not a runtime dependency —</text>
+          <text class="tl" x="20" y="308">which is why consuming the</text>
+          <text class="tl" x="20" y="324">published artifact avoids it.</text>
+        </svg>
+      </div>
+      <figcaption>The generated layer is regenerated from the API's own specification at build time, so the wire types cannot drift from the contract. The facades are hand-written on top, which is what gives the library a surface that stays stable while the generated code underneath changes with the spec.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="modules">
+  <div class="wrap">
+    <p class="eyebrow">Modules</p>
+    <h2>Five modules, one of which you actually depend on</h2>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Module</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><code>connect-library</code></td><td><strong>The client.</strong> This is the one you take as a dependency; everything else is demonstration and tooling around it.</td></tr>
+          <tr><td><code>TSANet-integration-app</code></td><td>A console application with an executor per operation — create, approve, reject, information request and response, notes, close, attachments. Useful as a worked example and as a way to exercise the API by hand.</td></tr>
+          <tr><td><code>TSANet-integration-demo</code></td><td>Scripted demo scenarios over the same facades.</td></tr>
+          <tr><td><code>attachment-receiver</code></td><td>The receiving endpoint for the HTTPS attachment push arrangement — the piece both sides need before file transfer works.</td></tr>
+          <tr><td><code>demo-ui</code></td><td>A branded web demo over the SDK facades, with its own runbook and hosting notes.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><strong>If you host the demo UI, set its auth password.</strong> The demo runs with no authentication gate unless <code>TSANET_DEMO_AUTH_PASSWORD</code> is set. That is fine on a laptop and not fine on anything reachable from the internet.</div>
+  </div>
+</section>
+
+<section id="getting">
+  <div class="wrap">
+    <p class="eyebrow">Getting it</p>
+    <h2>Take the artifact, not the source tree</h2>
+    <p>This is the most important practical thing on the page, because the obvious approach does not work for most people.</p>
+
+    <h3>The path that works: consume the published library</h3>
+    <p><code>connect-library</code> is published to GitHub Packages as a <strong>public</strong> package, so you can depend on it without building anything:</p>
+    <pre><code><span class="c">&lt;!-- com.tsanet:connect-library:0.1.0 --&gt;</span>
+&lt;<span class="k">dependency</span>&gt;
+  &lt;<span class="k">groupId</span>&gt;com.tsanet&lt;/<span class="k">groupId</span>&gt;
+  &lt;<span class="k">artifactId</span>&gt;connect-library&lt;/<span class="k">artifactId</span>&gt;
+  &lt;<span class="k">version</span>&gt;0.1.0&lt;/<span class="k">version</span>&gt;
+&lt;/<span class="k">dependency</span>&gt;</code></pre>
+    <p>One wrinkle that catches everyone: <strong>GitHub Packages requires authentication for Maven even on public packages.</strong> You need a token with <code>read:packages</code> in your <code>settings.xml</code> against the <code>github</code> server, or the resolve fails in a way that looks like the artifact does not exist.</p>
+
+    <h3>The path that does not work from outside TSANet: build from source</h3>
+    <p>The client is generated from the Connect API's OpenAPI specification, and the build reads that specification from a <strong>sibling clone of a private repository</strong>. A clone of the SDK alone does not build. For TSANet engineers this is a one-line setup; for a member or vendor without access to that repository, building from source is simply not available.</p>
+    <p>There is a documented way around it if you need a hermetic build and have the spec by other means — vendor the specification into your own repository and point the codegen property at the vendored copy. That is the pattern the Fin/Intercom adapter uses, and it also removes the cross-repository CI credential that the sibling-clone approach needs.</p>
+    <div class="note" style="border-left-color:var(--red)"><strong>The practical consequence.</strong> If you are an external integrator, plan on consuming the published artifact and treating the source as reference reading. If you need to build it yourself — to patch it, or to run it in an air-gapped pipeline — that is a conversation with TSANet about spec access, not something you can resolve on your own.</div>
+  </div>
+</section>
+
+<section id="auth">
+  <div class="wrap">
+    <p class="eyebrow">Authentication</p>
+    <h2>Both credential modes, behind one session</h2>
+    <p>The library models authentication as a mode rather than branching call sites, so the same facade calls work whichever credentials you were issued.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Mode</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Client credentials</td><td>The OAuth 2.0 server-to-server path. Tokens are re-minted from a long-lived credential, so there is no static token to refresh — the arrangement described on the <a href="zendesk.html#auth">Zendesk</a> and <a href="salesforce.html#auth">Salesforce</a> pages.</td></tr>
+          <tr><td>Password</td><td>The legacy login that exchanges a username and password for a JWT lasting about an hour.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>An account registry sits alongside the session types, so a single process can hold sessions for more than one member account — which is what an integration serving several tenants needs, and what a single-account client makes painful.</p>
+  </div>
+</section>
+
+<section id="storage">
+  <div class="wrap">
+    <p class="eyebrow">Local state</p>
+    <h2>A storage layer for what you fetched</h2>
+    <p>The library ships storage services paralleling the facades — collaboration requests and their form templates, notes, responses, partner selections, user context, webhook subscriptions and inbound events, attachment configuration and forward results. Backed by SQLite in the demo, they give an integration somewhere to keep what it has already retrieved.</p>
+    <p>This matters more than it first appears on an API where inbound events are thin. When a webhook tells you only that <em>something</em> changed on a token, the fetch is what establishes truth — and having a local record of what you last saw is how you work out what actually changed, and how you avoid re-notifying on every redelivery. Every connector on this hub ends up building some version of this; here it comes with the client.</p>
+  </div>
+</section>
+
+<section id="languages">
+  <div class="wrap">
+    <p class="eyebrow">Other languages</p>
+    <h2>Java today; Python and TypeScript scoped, not started</h2>
+    <p>There is no Python, JavaScript or TypeScript client. A scoping note exists and is honest that the work has not begun. What it establishes is that the shape is well understood: each target needs a generated client from the same specification, a thin facade layer reproducing the same eight-facade surface so parity is auditable, and a local cache equivalent to the SQLite store.</p>
+    <p>No new code-generation infrastructure is required — the same generator already supports Python and TypeScript targets — so the cost is the facade layer and the tests, not the plumbing. Python is the stated first choice, driven by a real integration need rather than by demo convenience.</p>
+    <div class="note">If you are building on a non-JVM stack today, you are writing against the REST API directly. The <a href="fin-intercom.html#taxonomy">submit-outcome taxonomy</a> and the polling-cursor guidance elsewhere on this hub are the parts worth copying, because they are the parts that are easy to get subtly wrong.</div>
+  </div>
+</section>
+
+<section id="when">
+  <div class="wrap">
+    <p class="eyebrow">Fit</p>
+    <h2>When to reach for it</h2>
+    <div class="cols">
+      <div>
+        <h3>Good fit</h3>
+        <ul class="tight">
+          <li>A custom JVM integration against a platform with no TSANet connector</li>
+          <li>A middleware or translation service between the Connect API and an in-house system</li>
+          <li>Learning the API's real shape before committing to a design — the console app exercises every operation</li>
+          <li>Anything needing attachments, where the receiver module saves building the endpoint yourself</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Look elsewhere</h3>
+        <ul class="tight">
+          <li>Your platform already has a connector — use <a href="salesforce.html">Salesforce</a>, <a href="zendesk.html">Zendesk</a> or <a href="dynamics.html">Dynamics</a> rather than rebuilding</li>
+          <li>You are not on the JVM — there is no port yet</li>
+          <li>You need a frozen, long-supported API surface; this is v0.1.0 and will move</li>
+          <li>You cannot pin dependencies and need something that floats safely</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
