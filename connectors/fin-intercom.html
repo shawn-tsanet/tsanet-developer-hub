@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fin / Intercom connector — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  /* page-local: the class-comparison table wants a highlighted column */
+  td.next{color:var(--ink);background:rgba(0,91,130,.05)}
+  thead th.next{background:rgba(0,91,130,.05);color:var(--blue)}
+  .flag{color:var(--orange);font-weight:600}
+  .drivers{list-style:none;display:grid;gap:22px;margin-top:8px}
+  .drivers li{display:grid;grid-template-columns:2.1rem 1fr;gap:14px;align-items:start;max-width:none}
+  .drivers .n{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--blue);border-top:2px solid var(--orange);padding-top:6px}
+  .drivers h4{font-family:var(--disp);font-size:16px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em}
+  .drivers p{margin:0;font-size:14px}
+  .receipts{font-family:var(--mono);font-size:12.5px;line-height:1.9;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;overflow-x:auto;margin:18px 0}
+  .receipts div{white-space:pre}
+  .r-ok{color:var(--green);font-weight:600}
+  .r-no{color:var(--orange);font-weight:600}
+  .r-dim{color:var(--mute)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors" aria-current="page">Connectors</a>
+      <a href="../index.html#api">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / <a href="../index.html#connectors">Connectors</a> / Fin&nbsp;·&nbsp;Intercom</div>
+    <h1>Fin / Intercom</h1>
+    <p class="lede">A gateway-class connector: TSANet hosts and operates the integration, because Intercom will not run member code inside the workspace. This page is the architecture as built, and the platform behaviour an implementer needs to know before starting.</p>
+    <div class="meta-row">
+      <span><b>Class</b> Gateway adapter</span>
+      <span><b>Status</b> Early access</span>
+      <span><b>Surface</b> Canvas Kit sidebar, Help Desk</span>
+      <span><b>Last verified</b> 2026-08-09</span>
+    </div>
+    <div class="toc">
+      <a href="#class">Why it is shaped differently</a>
+      <a href="#topology">Topology</a>
+      <a href="#outbound">Outbound flow</a>
+      <a href="#taxonomy">Submit outcomes</a>
+      <a href="#inbound">Inbound flow</a>
+      <a href="#recovery">Recovery</a>
+      <a href="#mapping">Status mapping</a>
+      <a href="#platform">Platform notes</a>
+      <a href="#environments">Environments</a>
+      <a href="#gaps">Known gaps</a>
+    </div>
+  </div>
+</header>
+
+<section id="class">
+  <div class="wrap">
+    <p class="eyebrow">Connector class</p>
+    <h2>Why this connector is shaped differently</h2>
+    <p>Every connector TSANet shipped before this one assumes code can run inside the member's own system. Salesforce, ServiceNow, Dynamics and Oracle all allow it; Zendesk partly. Intercom does not — and neither will most of the platforms behind it. That single constraint makes TSANet the <em>operator</em> of the integration rather than the author of a specification someone else implements.</p>
+
+    <div class="twrap">
+      <table>
+        <caption>Zendesk sits between the two: its apps run client-side in a sandbox and its integration flows are Zendesk-hosted, so some logic has a home in-tenant but arbitrary server code does not.</caption>
+        <thead>
+          <tr><th scope="col">&nbsp;</th><th scope="col">In-tenant connector</th><th scope="col" class="next">Gateway adapter</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Platforms</th><td>Salesforce, ServiceNow, Dynamics, Oracle</td><td class="next">Intercom&nbsp;/&nbsp;Fin, Pylon, DevRev, Wolken</td></tr>
+          <tr><th scope="row">Where code runs</th><td>Inside the member's own tenant</td><td class="next">A service TSANet hosts and runs</td></tr>
+          <tr><th scope="row">Who operates it</th><td>The member</td><td class="next">TSANet</td></tr>
+          <tr><th scope="row">Credentials live</th><td>In the member's tenant</td><td class="next">With TSANet, one set per member</td></tr>
+          <tr><th scope="row">Case lifecycle state</th><td>The CRM holds it</td><td class="next">The gateway must hold it</td></tr>
+          <tr><th scope="row">If it breaks</th><td>One member is affected</td><td class="next"><span class="flag">Every member on the gateway</span></td></tr>
+          <tr><th scope="row">Distribution</th><td>Installed package or app</td><td class="next">Connected app plus a hosted service</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The row worth pausing on is the second from last. An in-tenant connector fails one member at a time. A gateway adapter is shared infrastructure, and its failures are correlated across everyone using it — which is why so much of the design below is about durability and recovery rather than features.</p>
+
+    <h3>Three differences that force the change</h3>
+    <ol class="drivers">
+      <li>
+        <span class="n">01</span>
+        <div>
+          <h4>There is nowhere in the member's system to put connector code</h4>
+          <p>Intercom offers an API, webhooks, sign-in, and panels rendered from your own servers. There is no equivalent of an installed package running inside the customer's instance, so everything runs on infrastructure TSANet operates.</p>
+        </div>
+      </li>
+      <li>
+        <span class="n">02</span>
+        <div>
+          <h4>The unit of work is a conversation, not a record</h4>
+          <p>Other connectors assume a case record with a rich status model, custom fields, and a platform-maintained audit trail. Intercom's native object is a conversation thread; tickets were added later and carry only a handful of states. State other connectors get for free has to be kept by the gateway instead.</p>
+        </div>
+      </li>
+      <li>
+        <span class="n">03</span>
+        <div>
+          <h4>The AI answers first, and a human is the escalation path</h4>
+          <p>Fin is designed to resolve before a person is involved, and Intercom charges per resolution rather than per seat. A collaboration request arriving into that world is expected to be answered, not queued — and the TSANet lifecycle assumes a human picks the case up.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h3>What the lifecycle actually permits</h3>
+    <p>The open design question was whether an incoming partner request could be answered and closed out without ever becoming a ticket — the flow Intercom is built around. Probed against a live environment rather than reasoned from documentation:</p>
+
+    <div class="receipts" role="group" aria-label="Live probe results">
+      <div><span class="r-dim">partner submits a request        </span> <span class="r-ok">200</span>  status OPEN, response clock starts</div>
+      <div><span class="r-dim">we answer with a note            </span> <span class="r-ok">200</span>  <span class="r-ok">allowed without accepting</span></div>
+      <div><span class="r-dim">partner tries to close it        </span> <span class="r-no">422</span>  "OPEN cases cannot be closed."</div>
+      <div><span class="r-dim">we try to close it               </span> <span class="r-no">422</span>  same refusal — not a permissions issue</div>
+    </div>
+
+    <p>Half of it works. <strong>Answering requires no change to the case's status at all</strong>, so an AI agent can do its entire job inside a conversation, with nothing written back but the answer. But <strong>no case can be retired while it is still open</strong>, by either party. Every request that ends cleanly must first be accepted.</p>
+
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 640 208" style="min-width:560px" role="img" aria-labelledby="dgT dgD">
+          <title id="dgT">The permitted lifecycle for a collaboration request</title>
+          <desc id="dgD">A request moves from Open to Accepted to Closed. Notes may pass in either direction while the request is Open without changing its status. A direct transition from Open to Closed is refused with HTTP 422.</desc>
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker>
+          </defs>
+          <path class="lnA" d="M78,74 C78,34 182,34 182,74" marker-end="url(#ar)"/>
+          <text class="tl" x="130" y="30" text-anchor="middle" style="fill:var(--blue);font-weight:600">notes, either direction</text>
+          <text class="tl" x="130" y="45" text-anchor="middle">status unchanged — the AI works here</text>
+
+          <rect class="bx-acc" x="40" y="78" width="118" height="42" rx="6"/>
+          <text class="tt" x="99" y="104" text-anchor="middle">OPEN</text>
+          <rect class="bx" x="262" y="78" width="118" height="42" rx="6"/>
+          <text class="tt" x="321" y="104" text-anchor="middle">ACCEPTED</text>
+          <rect class="bx" x="484" y="78" width="118" height="42" rx="6"/>
+          <text class="tt" x="543" y="104" text-anchor="middle">CLOSED</text>
+
+          <line class="ln" x1="158" y1="99" x2="253" y2="99" marker-end="url(#ar)"/>
+          <text class="tl" x="205" y="90" text-anchor="middle">accept</text>
+          <line class="ln" x1="380" y1="99" x2="475" y2="99" marker-end="url(#ar)"/>
+          <text class="tl" x="427" y="90" text-anchor="middle">close</text>
+
+          <path d="M99,120 C99,178 543,178 543,120" fill="none" stroke="var(--orange)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+          <line x1="311" y1="158" x2="331" y2="178" stroke="var(--orange)" stroke-width="1.5"/>
+          <line x1="331" y1="158" x2="311" y2="178" stroke="var(--orange)" stroke-width="1.5"/>
+          <text class="tl" x="321" y="200" text-anchor="middle" style="fill:var(--orange);font-weight:600">422 — refused for both parties</text>
+        </svg>
+      </div>
+      <figcaption>The refused edge is the constraint the design has to accommodate: acceptance is not optional, so it cannot be treated as the moment work becomes real. Incoming requests land as a conversation and become a ticket only when a person needs to own the work — tying ticket creation to acceptance would create a ticket for <em>every single request</em>, which is precisely what the conversation-first model exists to prevent.</figcaption>
+    </figure>
+
+    <div class="note"><strong>Recommended guardrail: the AI drafts, a person commits.</strong> Fin composes the answer and posts it. Accepting, declining, and requesting more information stay with a human. The reasoning is not answer quality — it is that these actions are contractual commitments to another vendor made under a service-level clock, and that partner escalations carry end-customer logs and text pasted in verbatim: untrusted content reaching an AI that then replies under the member's name.</div>
+  </div>
+</section>
+
+<section id="topology">
+  <div class="wrap">
+    <p class="eyebrow">Topology</p>
+    <h2>The system at a glance</h2>
+    <p>One headless Spring Boot process sits between the two platforms. Everything TSANet-facing lives in an embedded <code>gateway-engine</code> shared across adapters; everything Intercom-facing goes through a REST gateway. The process border <em>is</em> the trust boundary: signature verification is default-deny, so a route matching no scheme is rejected 401, and a missing secret fails closed. <code>/healthz</code> is the only open route.</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1160 700" style="min-width:1050px" role="img" aria-label="Topology: the Intercom platform and Intercom REST API on the left; the connector process in the centre containing the canvas flow, webhook intake, event queue and handlers, the reconciliation poller, the link table and the embedded gateway engine; the TSANet Connect API, webhook push and partner member on the right. Five numbered edges cross the process boundary.">
+          <defs>
+            <marker id="ahI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker>
+            <marker id="ahA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--blue)"/></marker>
+          </defs>
+
+          <!-- LEFT: Intercom world -->
+          <rect class="bx-ext" x="16" y="72" width="240" height="104" rx="8"/>
+          <text class="tt" x="30" y="94">Intercom Help Desk (agent)</text>
+          <text class="ts" x="30" y="113">"TSANet Connect" sidebar panel</text>
+          <text class="ts" x="30" y="129">Canvas Kit · ticket + conversation</text>
+          <text class="ts" x="30" y="145">markdown links + bold only, no HTML</text>
+          <text class="ts" x="30" y="161">agents never see the service itself</text>
+
+          <rect class="bx-ext" x="16" y="216" width="240" height="96" rx="8"/>
+          <text class="tt" x="30" y="238">Intercom platform</text>
+          <text class="ts" x="30" y="257">canvas POSTs + webhook delivery</text>
+          <text class="ts" x="30" y="273">weak contract: 5s timeout, 1 retry,</text>
+          <text class="ts" x="30" y="289">429 throttling → fast-ack + queue</text>
+
+          <rect class="bx-ext" x="16" y="560" width="240" height="92" rx="8"/>
+          <text class="tt" x="30" y="582">Intercom REST API</text>
+          <text class="ts" x="30" y="601">tickets · admin notes · ticket states</text>
+          <text class="ts" x="30" y="617">returns silent 200s on bad fields:</text>
+          <text class="ts" x="30" y="633">every write is read back</text>
+
+          <!-- CENTER: adapter process -->
+          <rect class="lnA" x="316" y="44" width="540" height="640" rx="12" fill="none"/>
+          <text class="tt" x="332" y="68">connector process · Spring Boot · single replica</text>
+          <text class="tl" x="332" y="84">border = signature verification · default-deny HMAC · /healthz only open route</text>
+
+          <rect class="bx" x="344" y="112" width="224" height="104" rx="8"/>
+          <text class="tt" x="356" y="133">Canvas flow</text>
+          <text class="ts" x="356" y="151">CanvasController · CanvasKit</text>
+          <text class="ts" x="356" y="167">FlowStateStore · bounded + TTL</text>
+          <text class="ts" x="356" y="183">stored_data carries {flow_id} only</text>
+          <text class="ts" x="356" y="199">≤1 gateway call per canvas response</text>
+
+          <rect class="bx-acc" x="612" y="100" width="216" height="128" rx="8"/>
+          <text class="tt" x="624" y="121">gateway-engine (embedded)</text>
+          <text class="ts" x="624" y="140">SdkTsanetGateway</text>
+          <text class="ts" x="624" y="156">MemberSessionRegistry</text>
+          <text class="ts" x="624" y="172">generated Connect client</text>
+          <text class="ts" x="624" y="188">deadlines · sanitization · sessions</text>
+          <text class="tl" x="624" y="210">shared across adapters</text>
+
+          <rect class="bx" x="344" y="254" width="224" height="110" rx="8"/>
+          <text class="tt" x="356" y="275">Webhook intake</text>
+          <text class="ts" x="356" y="293">IntercomWebhookController</text>
+          <text class="ts" x="356" y="309">TsanetWebhookController · v2 only</text>
+          <text class="ts" x="356" y="325">DedupeStore · LRU 10,000 ids</text>
+          <text class="ts" x="356" y="341">always 200: 4xx would kill retry</text>
+
+          <rect class="bx" x="344" y="398" width="224" height="64" rx="8"/>
+          <text class="tt" x="356" y="419">EventQueue</text>
+          <text class="ts" x="356" y="437">bounded · offer() drops on full</text>
+          <text class="ts" x="356" y="453">one drain thread, deliberately</text>
+
+          <rect class="bx" x="612" y="280" width="216" height="180" rx="8"/>
+          <text class="tt" x="624" y="301">Event handlers</text>
+          <text class="ts" x="624" y="320">InboundRequestHandler</text>
+          <text class="tl" x="632" y="335">claim-before-create</text>
+          <text class="ts" x="624" y="354">InboundClosureHandler</text>
+          <text class="tl" x="632" y="369">platform first, then record</text>
+          <text class="ts" x="624" y="388">PartnerResponseHandler</text>
+          <text class="tl" x="632" y="403">once per status transition</text>
+          <text class="ts" x="624" y="422">AnnotationHandler</text>
+          <text class="tl" x="632" y="437">NONE/DEGRADED/FULL · 5s/20s ×3</text>
+
+          <rect class="bx" x="344" y="496" width="224" height="84" rx="8"/>
+          <text class="tt" x="356" y="517">ReconciliationPoller</text>
+          <text class="ts" x="356" y="535">re-drives what push dropped</text>
+          <text class="ts" x="356" y="551">updatedAt cursor − 120s overlap</text>
+          <text class="ts" x="356" y="567">advances only on a clean cycle</text>
+
+          <rect class="bx-grn" x="612" y="506" width="216" height="110" rx="8"/>
+          <text class="tt" x="624" y="527">Durable state</text>
+          <text class="ts" x="624" y="546">SubmissionLinkTable · never evicted</text>
+          <text class="ts" x="624" y="562">keys: token · internalCaseNo · conv</text>
+          <text class="ts" x="624" y="578">PollerStateStore · same store</text>
+          <text class="ts" x="624" y="594">durable volume required</text>
+
+          <rect class="bx" x="344" y="616" width="224" height="64" rx="8"/>
+          <text class="tt" x="356" y="637">RestIntercomGateway</text>
+          <text class="ts" x="356" y="655">annotate · resolve · note, from the</text>
+          <text class="ts" x="356" y="671">drain only, never a canvas response</text>
+
+          <!-- RIGHT: TSANet world -->
+          <rect class="bx-ext" x="916" y="72" width="228" height="170" rx="8"/>
+          <text class="tt" x="930" y="94">TSANet Connect API · /v1</text>
+          <text class="ts" x="930" y="113">entity search · process form</text>
+          <text class="ts" x="930" y="129">createCollaborationRequest</text>
+          <text class="ts" x="930" y="145">approve · reject · request-info</text>
+          <text class="ts" x="930" y="161">closure · list (internalCaseNo)</text>
+          <text class="ts" x="930" y="177">OAuth (Entra) or password login</text>
+          <text class="ts" x="930" y="193">no idempotency key on create</text>
+          <text class="ts" x="930" y="209">problem+json via Accept opt-in</text>
+          <text class="tl" x="930" y="230">prod: connect2.tsanet.org</text>
+
+          <rect class="bx-ext" x="916" y="286" width="228" height="120" rx="8"/>
+          <text class="tt" x="930" y="308">Connect webhook push</text>
+          <text class="ts" x="930" y="327">CloudEvents v2 · v1 gone early 2027</text>
+          <text class="ts" x="930" y="343">request.created · request.closed</text>
+          <text class="ts" x="930" y="359">note.created · response.created</text>
+          <text class="ts" x="930" y="375">response.updated</text>
+          <text class="ts" x="930" y="391">single attempt from our side</text>
+
+          <rect class="bx-ext" x="916" y="446" width="228" height="72" rx="8"/>
+          <text class="tt" x="930" y="468">Partner member</text>
+          <text class="ts" x="930" y="487">works the same case from their</text>
+          <text class="ts" x="930" y="503">own connector or the web app</text>
+
+          <!-- EDGES: external -->
+          <path class="ln" d="M136,176 V210" marker-end="url(#ahI)"/>
+          <text class="ts" x="146" y="200">clicks · input</text>
+
+          <path class="lnA" d="M256,240 H296 V164 H338" marker-end="url(#ahA)"/>
+          <circle class="bdg" cx="296" cy="204" r="10"/><text class="bdgT" x="296" y="208" text-anchor="middle">1</text>
+
+          <path class="lnA" d="M256,296 H338" marker-end="url(#ahA)"/>
+          <circle class="bdg" cx="296" cy="296" r="10"/><text class="bdgT" x="296" y="300" text-anchor="middle">2</text>
+
+          <path class="lnA" d="M916,346 H884 V266 H574" marker-end="url(#ahA)"/>
+          <circle class="bdg" cx="884" cy="306" r="10"/><text class="bdgT" x="884" y="310" text-anchor="middle">3</text>
+
+          <path class="lnA" d="M828,164 H910" marker-end="url(#ahA)"/>
+          <circle class="bdg" cx="872" cy="164" r="10"/><text class="bdgT" x="872" y="168" text-anchor="middle">4</text>
+
+          <path class="lnA" d="M344,644 H300 V612 H262" marker-end="url(#ahA)"/>
+          <circle class="bdg" cx="300" cy="630" r="10"/><text class="bdgT" x="300" y="634" text-anchor="middle">5</text>
+
+          <!-- EDGES: internal -->
+          <path class="ln" d="M568,150 H606" marker-end="url(#ahI)"/>
+          <text class="tl" x="566" y="106" text-anchor="end">search · form · submit ↴</text>
+          <path class="ln" d="M456,364 V392" marker-end="url(#ahI)"/>
+          <text class="tl" x="464" y="384">dedupe → queue</text>
+          <path class="ln" d="M568,430 H606" marker-end="url(#ahI)"/>
+          <text class="tl" x="572" y="422">drain</text>
+          <path class="ln" d="M720,280 V234" marker-end="url(#ahI)"/>
+          <text class="tl" x="728" y="246">fetchByToken ·</text>
+          <text class="tl" x="728" y="258">approve/reject/RFI</text>
+          <path class="ln" d="M612,444 H590 V648 H574" marker-end="url(#ahI)"/>
+          <path class="ln" d="M720,460 V500" marker-end="url(#ahI)"/>
+          <text class="tl" x="728" y="482">record · anchor ·</text>
+          <text class="tl" x="728" y="494">surfaced status</text>
+          <path class="ln" d="M568,524 H596 V218 H606" marker-end="url(#ahI)"/>
+          <text class="tl" x="607" y="374" transform="rotate(-90 607 374)">listInboundUpdatedSince</text>
+          <path class="ln" d="M456,496 V478 H700 V466" marker-end="url(#ahI)"/>
+          <text class="tl" x="474" y="474">handle() direct · bypasses the queue</text>
+          <path class="ln" d="M568,560 H606" marker-end="url(#ahI)"/>
+          <text class="tl" x="562" y="602" text-anchor="end">cursor →</text>
+          <path class="ln" d="M1030,242 V280" marker-end="url(#ahI)"/>
+          <text class="tl" x="1038" y="266">case events</text>
+        </svg>
+      </div>
+      <figcaption>The runtime as built. Accent edges cross the signed process boundary and are numbered in the legend below; plain edges are in-process calls. The green store is the only state that survives a restart.</figcaption>
+    </figure>
+    <ul class="legend">
+      <li><span class="n">1</span><span><b>Canvas requests.</b> <code>POST /canvas/initialize</code> and <code>/canvas/submit</code>, signed <code>X-Body-Signature</code>, HMAC-SHA256 over the raw body with the Intercom app client secret.</span></li>
+      <li><span class="n">2</span><span><b>Intercom webhooks.</b> <code>POST /webhooks/intercom</code>, signed <code>X-Hub-Signature</code>, HMAC-SHA1 (<code>sha1=&lt;hex&gt;</code>), same client secret. Note the two schemes differ in both algorithm and prefix.</span></li>
+      <li><span class="n">3</span><span><b>TSANet push.</b> <code>POST /webhooks/tsanet</code>, CloudEvents v2, signed <code>x-hub-signature-256</code>, HMAC-SHA256. Non-routable bodies are refused loudly but still answered 200.</span></li>
+      <li><span class="n">4</span><span><b>Connect API calls.</b> REST <code>/v1</code>, bearer injected per request by interceptor; OAuth pre-refreshes on a 30s expiry skew. Hard deadlines: 1500ms reads, 4000ms mutations, on virtual threads.</span></li>
+      <li><span class="n">5</span><span><b>Intercom API calls.</b> Tickets, admin notes, ticket-state writes. Every mutation is read back and asserted: the API 200s while ignoring unknown fields.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="outbound">
+  <div class="wrap">
+    <p class="eyebrow">Flow 1 · outbound</p>
+    <h2>An agent files a case with a partner</h2>
+    <p>The canvas flow keeps all real state server-side (<code>stored_data</code> carries an opaque <code>{flow_id}</code> only), makes at most one gateway call per canvas response, and never retries in-handler: the canvas latency budget is hard — an 8s response renders, a 10s one fails, and a slow submit strands the agent on a spinner with no error at all. The flow id doubles as the submission's <code>internalCaseNumber</code>, one per flow by construction.</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1140 852" style="min-width:1000px" role="img" aria-label="Sequence diagram of the outbound flow: the panel drives the connector through search, form and submit; the connector calls the embedded gateway engine, which calls the TSANet Connect API; on success the connector records a submission link and asynchronously annotates the Intercom ticket.">
+          <defs><marker id="sah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+          <g>
+            <rect class="bx-ext" x="20" y="16" width="150" height="40" rx="7"/><text class="tt" x="95" y="41" text-anchor="middle">Panel</text>
+            <rect class="bx" x="255" y="16" width="170" height="40" rx="7"/><text class="tt" x="340" y="41" text-anchor="middle">Connector</text>
+            <rect class="bx-acc" x="505" y="16" width="170" height="40" rx="7"/><text class="tt" x="590" y="41" text-anchor="middle">gateway-engine</text>
+            <rect class="bx-ext" x="755" y="16" width="170" height="40" rx="7"/><text class="tt" x="840" y="41" text-anchor="middle">Connect API /v1</text>
+            <rect class="bx-ext" x="975" y="16" width="150" height="40" rx="7"/><text class="tt" x="1050" y="41" text-anchor="middle">Intercom API</text>
+          </g>
+          <g stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4">
+            <line x1="95" y1="56" x2="95" y2="820"/><line x1="340" y1="56" x2="340" y2="820"/><line x1="590" y1="56" x2="590" y2="820"/><line x1="840" y1="56" x2="840" y2="820"/><line x1="1050" y1="56" x2="1050" y2="820"/>
+          </g>
+          <g>
+            <path class="ln" d="M95,92 H334" marker-end="url(#sah)"/><text class="tl" x="110" y="84">POST /canvas/initialize · signed · ticket key rides every ticket-surface request</text>
+            <path class="ln" stroke-dasharray="5 4" d="M340,126 H101" marker-end="url(#sah)"/><text class="tl" x="110" y="118">home canvas · stored_data = {flow_id}</text>
+            <path class="ln" d="M95,160 H334" marker-end="url(#sah)"/><text class="tl" x="110" y="152">/canvas/submit · search "q"</text>
+            <path class="ln" d="M340,194 H584" marker-end="url(#sah)"/><text class="tl" x="352" y="186">searchPartners(q) · deadline 1500ms, no retries</text>
+            <path class="ln" d="M590,228 H834" marker-end="url(#sah)"/><text class="tl" x="602" y="220">entity search · bearer per request (registry session)</text>
+            <path class="ln" stroke-dasharray="5 4" d="M840,262 H346" marker-end="url(#sah)"/><text class="tl" x="380" y="254">List&lt;PartnerHit&gt;</text>
+            <path class="ln" stroke-dasharray="5 4" d="M340,296 H101" marker-end="url(#sah)"/><text class="tl" x="110" y="288">partner list canvas</text>
+            <path class="ln" d="M95,330 H334" marker-end="url(#sah)"/><text class="tl" x="110" y="322">select partner</text>
+            <path class="ln" d="M340,364 H584" marker-end="url(#sah)"/><text class="tl" x="352" y="356">form(partner) · fresh per flow, never cached</text>
+            <path class="ln" d="M590,398 H834" marker-end="url(#sah)"/><text class="tl" x="602" y="390">fetch process form</text>
+            <path class="ln" stroke-dasharray="5 4" d="M340,432 H101" marker-end="url(#sah)"/><text class="tl" x="110" y="424">form canvas · STRING/EMAIL/PHONE/INTEGER/URL→input · TEXT→textarea · HIDDEN unrendered</text>
+            <rect class="bx" x="180" y="448" width="440" height="34" rx="6"/><text class="tl" x="194" y="469">submitter identity prefilled from acting teammate, editable</text>
+            <path class="ln" d="M95,516 H334" marker-end="url(#sah)"/><text class="tl" x="110" y="508">submit form (typed values win over defaults)</text>
+            <rect class="bx" x="180" y="532" width="440" height="34" rx="6"/><text class="tl" x="194" y="553">flow state DRAFT → SUBMITTING (CAS) · flow_id = internalCaseNumber</text>
+            <path class="ln" d="M340,600 H584" marker-end="url(#sah)"/><text class="tl" x="352" y="592">submit(draft) · deadline 4000ms total</text>
+            <path class="ln" d="M590,634 H834" marker-end="url(#sah)"/><text class="tl" x="602" y="626">createCollaborationRequest · testSubmission per config (default true)</text>
+            <path class="ln" stroke-dasharray="5 4" d="M840,668 H346" marker-end="url(#sah)"/><text class="tl" x="380" y="660">200 + case token (no idempotency, no conflict rejection)</text>
+            <rect class="bx-grn" x="180" y="684" width="440" height="34" rx="6"/><text class="tl" x="194" y="705">record SubmissionLink durably · state → SUBMITTED</text>
+            <path class="ln" stroke-dasharray="5 4" d="M340,752 H101" marker-end="url(#sah)"/><text class="tl" x="110" y="744">success canvas</text>
+            <path class="ln" d="M340,800 H1044" marker-end="url(#sah)"/><text class="tl" x="352" y="792">async, on the drain: annotate ticket attributes, read back · NONE/DEGRADED/FULL · retries 5s/20s ×3</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Happy path. Dashed arrows are responses. The annotation write never happens inside a canvas response — the latency budget forbids Intercom calls there; it rides the event queue instead. Attributes are keyed by <em>name</em>, datetimes take epoch seconds, and a workspace-side rename surfaces as the read-back failing, not as a write error.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="taxonomy">
+  <div class="wrap">
+    <p class="eyebrow">Flow 1a · submit outcomes</p>
+    <h2>What a submit can become, and why ambiguity is parked</h2>
+    <p>Case submission is not idempotent and the Connect API offers no idempotency key: <code>createCollaborationRequest</code> documents 200/400/401 only, so a second POST with the same <code>internalCaseNumber</code> simply creates a second case. The gateway contract therefore splits failures into exactly two kinds, and treats everything ambiguous as ambiguous.</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1120 372" style="min-width:960px" role="img" aria-label="Submit outcome taxonomy: a submit either succeeds, is definitively rejected before create, or is ambiguous; ambiguous outcomes park the flow UNRESOLVED and reconcile through findSubmission, which either confirms the case or re-arms the draft.">
+          <defs><marker id="tah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+          <rect class="bx" x="20" y="146" width="180" height="64" rx="8"/>
+          <text class="tt" x="110" y="173" text-anchor="middle">submit(draft)</text>
+          <text class="ts" x="110" y="192" text-anchor="middle">≤ 4000ms total</text>
+
+          <path class="ln" d="M200,158 C250,120 270,72 314,64" marker-end="url(#tah)"/>
+          <text class="tl" x="230" y="96">200 + token</text>
+          <rect class="bx-grn" x="320" y="24" width="300" height="80" rx="8"/>
+          <text class="tt" x="336" y="48">Created</text>
+          <text class="ts" x="336" y="67">record SubmissionLink → SUBMITTED</text>
+          <text class="ts" x="336" y="83">annotation event queued for the ticket</text>
+
+          <path class="ln" d="M200,178 H314" marker-end="url(#tah)"/>
+          <text class="tl" x="212" y="156">parsed 400 · 401 ·</text>
+          <text class="tl" x="212" y="170">403 · 404 · 422</text>
+          <rect class="bx" x="320" y="134" width="300" height="88" rx="8" style="stroke:var(--red)"/>
+          <text class="tt" x="336" y="158" style="fill:var(--red)">GatewayException · definitive</text>
+          <text class="ts" x="336" y="177">rejected before create → back to DRAFT</text>
+          <text class="ts" x="336" y="193">problem+json detail rendered next to the</text>
+          <text class="ts" x="336" y="209">field that fixes it (email-domain rule)</text>
+
+          <path class="ln" d="M200,198 C250,236 270,272 314,282" marker-end="url(#tah)"/>
+          <text class="tl" x="200" y="240">timeout · 5xx · reset ·</text>
+          <text class="tl" x="200" y="254">token-less 200</text>
+          <rect class="bx" x="320" y="248" width="300" height="96" rx="8" style="stroke:var(--amber)"/>
+          <text class="tt" x="336" y="272" style="fill:var(--amber)">GatewayTimeoutException · ambiguous</text>
+          <text class="ts" x="336" y="291">flow parked UNRESOLVED · exempt from</text>
+          <text class="ts" x="336" y="307">store eviction and TTL (severing one</text>
+          <text class="ts" x="336" y="323">orphans the case)</text>
+
+          <path class="ln" d="M620,296 H704" marker-end="url(#tah)"/>
+          <text class="tl" x="626" y="288">reconcile</text>
+          <rect class="bx" x="710" y="258" width="220" height="76" rx="8"/>
+          <text class="tt" x="726" y="282">findSubmission(flow_id)</text>
+          <text class="ts" x="726" y="301">best-effort lookup, NOT an</text>
+          <text class="ts" x="726" y="317">idempotency guarantee</text>
+
+          <path class="ln" d="M930,278 C972,260 980,216 1000,204" marker-end="url(#tah)"/>
+          <rect class="bx-grn" x="944" y="140" width="160" height="58" rx="8"/>
+          <text class="tt" x="960" y="164">found → SUBMITTED</text>
+          <text class="ts" x="960" y="182">case confirmed</text>
+
+          <path class="ln" d="M930,316 C968,330 976,352 998,356" marker-end="url(#tah)"/>
+          <rect class="bx" x="944" y="330" width="160" height="34" rx="8" style="stroke:var(--amber)"/>
+          <text class="ts" x="960" y="351">none → DRAFT re-armed</text>
+
+          <text class="tl" x="710" y="356">&gt;1 match → throws (no silent confirm)</text>
+        </svg>
+      </div>
+      <figcaption>The UNRESOLVED → DRAFT transition on an empty lookup is the <em>server-side</em> marker that re-arms retry; component ids from the client are never trusted for it. An empty lookup cannot prove the original request is not still in flight, so the residual duplicate window is accepted and named in the agent-facing copy. The same taxonomy gates the inbound response actions — a 5xx on an approve read as "definitively rejected" would invite answering a partner twice.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="inbound">
+  <div class="wrap">
+    <p class="eyebrow">Flow 2 · inbound</p>
+    <h2>A partner opens a case with us</h2>
+    <p>Push is thin and single-attempt, so intake fast-acks and the fetch is the truth: the event contributes only the token. Ticket creation is claim-before-create, arbitrated by the token's UNIQUE constraint in the link table, because check-then-create is a TOCTOU race that has produced duplicate-ticket defects in an earlier connector (<code>note.created</code> overtaking <code>collaboration-request.created</code>).</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1140 800" style="min-width:1000px" role="img" aria-label="Sequence diagram of the inbound flow: a partner opens a case on TSANet Connect, a CloudEvent reaches the connector, the connector fetches the case by token, claims it in the link table, creates the Intercom ticket, and the agent answers through the panel.">
+          <defs><marker id="iah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+          <g>
+            <rect class="bx-ext" x="20" y="16" width="150" height="40" rx="7"/><text class="tt" x="95" y="41" text-anchor="middle">Partner</text>
+            <rect class="bx-ext" x="255" y="16" width="180" height="40" rx="7"/><text class="tt" x="345" y="41" text-anchor="middle">TSANet Connect</text>
+            <rect class="bx" x="520" y="16" width="170" height="40" rx="7"/><text class="tt" x="605" y="41" text-anchor="middle">Connector</text>
+            <rect class="bx-ext" x="770" y="16" width="150" height="40" rx="7"/><text class="tt" x="845" y="41" text-anchor="middle">Intercom API</text>
+            <rect class="bx-ext" x="975" y="16" width="150" height="40" rx="7"/><text class="tt" x="1050" y="41" text-anchor="middle">Agent (panel)</text>
+          </g>
+          <g stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4">
+            <line x1="95" y1="56" x2="95" y2="770"/><line x1="345" y1="56" x2="345" y2="770"/><line x1="605" y1="56" x2="605" y2="770"/><line x1="845" y1="56" x2="845" y2="770"/><line x1="1050" y1="56" x2="1050" y2="770"/>
+          </g>
+          <g>
+            <path class="ln" d="M95,92 H339" marker-end="url(#iah)"/><text class="tl" x="108" y="84">opens a collaboration case naming our member</text>
+            <path class="ln" d="M345,126 H599" marker-end="url(#iah)"/><text class="tl" x="358" y="118">CloudEvent collaboration-request.created · signed · thin payload (token; CloudEvent id = only idempotency key)</text>
+            <rect class="bx" x="420" y="142" width="420" height="34" rx="6"/><text class="tl" x="434" y="163">verify → v2 parse (unroutable refused, still 200) → dedupe → queue</text>
+            <path class="ln" stroke-dasharray="5 4" d="M605,208 H351" marker-end="url(#iah)"/><text class="tl" x="380" y="200">200 fast-ack, every branch (4xx is never retried by TSANet)</text>
+            <path class="ln" d="M605,242 H351" marker-end="url(#iah)"/><text class="tl" x="358" y="234">drain: fetchByToken(token) · the fetch is the truth</text>
+            <rect class="bx" x="420" y="258" width="420" height="50" rx="6"/><text class="tl" x="434" y="279">direction INBOUND? (UNKNOWN never guessed) · terminal?</text><text class="tl" x="434" y="295">CLOSED/REJECTED → skip, never create-resolved</text>
+            <rect class="bx-grn" x="420" y="324" width="420" height="50" rx="6"/><text class="tl" x="434" y="345">record() claim · token UNIQUE arbitrates · only the insert</text><text class="tl" x="434" y="361">winner creates · failed create releases claim (unless anchored)</text>
+            <path class="ln" d="M605,408 H839" marker-end="url(#iah)"/><text class="tl" x="618" y="400">create Back-office ticket · configured type · synthetic partner contact</text>
+            <path class="ln" stroke-dasharray="5 4" d="M845,442 H611" marker-end="url(#iah)"/><text class="tl" x="628" y="434">id (API handle) + ticket_id (agent-searchable number)</text>
+            <rect class="bx-grn" x="420" y="458" width="420" height="34" rx="6"/><text class="tl" x="434" y="479">caseNumber = ticket_id, captured at create · anchor() write-once</text>
+            <path class="ln" stroke-dasharray="5 4" d="M605,524 H1044" marker-end="url(#iah)"/><text class="tl" x="640" y="516">panel renders from recorded CaseState: Accept · Decline · Request information</text>
+            <path class="ln" d="M1050,558 H611" marker-end="url(#iah)"/><text class="tl" x="640" y="550">Accept · engineer identity prefilled, editable (registered-domain rule)</text>
+            <rect class="bx" x="420" y="574" width="420" height="34" rx="6"/><text class="tl" x="434" y="595">CAS state first: two open panels cannot both answer</text>
+            <path class="ln" d="M605,642 H351" marker-end="url(#iah)"/><text class="tl" x="358" y="634">approve(token, engineer, caseNumber, nextSteps) · via engine, ≤4000ms · 5xx = ambiguous, state stays moved</text>
+            <path class="ln" stroke-dasharray="5 4" d="M345,676 H101" marker-end="url(#iah)"/><text class="tl" x="120" y="668">partner sees the acceptance + our searchable case number</text>
+            <path class="ln" d="M345,718 H599" marker-end="url(#iah)"/><text class="tl" x="358" y="698">later: collaboration-request.closed → resolve ticket FIRST, then record CLOSED</text>
+            <text class="tl" x="358" y="710">(a failed resolve records nothing, so redelivery can fix it)</text>
+            <path class="ln" d="M345,756 H599" marker-end="url(#iah)"/><text class="tl" x="358" y="748">response.created / .updated (our outbound cases) → fetch status → surface once per transition: ticket state + admin note</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Inbound create and answer. Inbound links carry <code>inbound:&lt;token&gt;</code> as their <code>internalCaseNumber</code>, a local provisional convention. An unset ticket type refuses to create; a blank anchor id is refused in both stores so the release guards agree by construction. One ticket can anchor several cases, so <code>byTicketId</code> refuses a multiple match.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="recovery">
+  <div class="wrap">
+    <p class="eyebrow">Flow 3 · recovery</p>
+    <h2>Re-driving what push dropped</h2>
+    <p>Between a single push attempt and a drain that catches internally, anything lost in the middle used to be lost permanently. The reconciliation poller closes that gap: it lists INBOUND cases via <code>listInboundUpdatedSince(cursor − 120s)</code> and drives anything with no link back through the same claim-before-create path.</p>
+    <div class="cols">
+      <ul class="tight">
+        <li><strong>Cursoring on <code>updatedAt</code> was verified, not assumed:</strong> a live-created case came back with <code>updatedAt == createdAt</code> to the nanosecond, and a filter set 60s earlier returned it. A naive reading of the data suggested <code>updatedAt</code> only moved on modification, which would have missed new cases for 24h.</li>
+        <li><strong>It calls the handler directly</strong>, not through the event queue: a recovery batch offered to a bounded queue could evict live webhook events. The claim arbitrates between the poller thread and the drain exactly as between two deliveries.</li>
+        <li><strong>Success means an anchored link</strong>, not a row existing: an unanchored row reads as in-flight and holds the cursor.</li>
+        <li><strong>The cursor advances only after a fully clean cycle</strong>, and only to an <code>updatedAt</code> actually observed. An empty window advances nothing. A wedged cursor degrades to a widening query and loud logs, never lost work.</li>
+      </ul>
+      <ul class="tight">
+        <li><strong>Terminal cases are prefiltered</strong> (still advancing the cursor), so a missed create plus a partner close cannot manufacture a dead pending ticket. The prefilter runs before the claim lookup, so an orphaned claim on a terminal case cannot wedge the cursor.</li>
+        <li><strong>Orphaned claims are surfaced, not reclaimed:</strong> age-based reclaim risks pulling a claim from under a live-but-slow create, recreating the duplicate-ticket class. Releasing one stays a human action.</li>
+        <li><strong>The cursor is persisted before the cycle is declared healthy</strong>, in the same durable store as the links — so a cursor cannot outlive the links it cursors over.</li>
+        <li><strong>Bounded windows:</strong> the list endpoint has no pagination, so the window is the only load control; the first run asks for now − 24h, never epoch. Single instance only.</li>
+      </ul>
+    </div>
+
+    <h3>What survives a restart, and what deliberately does not</h3>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Store</th><th>Survives restart</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>SubmissionLinkTable</code></td><td><span class="pill ok">yes · required</span></td><td>The token ↔ ticket routing substrate; indexed by token, <code>internalCaseNumber</code> and conversation id; never evicted. Carries <code>CaseState</code>, annotation state, case number and surfaced status.</td></tr>
+          <tr><td><code>PollerStateStore</code></td><td><span class="pill ok">yes</span></td><td>Reconciliation cursor. A lost cursor costs one wider re-scan; lost links orphan every open case — which is why only the cursor is allowed an in-memory fallback.</td></tr>
+          <tr><td><code>FlowStateStore</code></td><td><span class="pill warn">no · by design</span></td><td>Canvas flow state. SUBMITTING and UNRESOLVED flows are exempt from eviction and TTL; an expired flow restarts cleanly from the home canvas.</td></tr>
+          <tr><td><code>DedupeStore</code></td><td><span class="pill warn">no</span></td><td>In-memory LRU, 10,000 ids. Replay past the bound is re-processed; accepted because downstream handling is idempotent anyway.</td></tr>
+          <tr><td><code>EventQueue</code></td><td><span class="pill warn">no</span></td><td>Bounded; <code>offer()</code> drops on full. Both annotation offer sites audit the failure with the token so the manual re-drive path holds.</td></tr>
+          <tr><td><code>MemberSessionRegistry</code></td><td><span class="pill warn">no</span></td><td>Per-member session, gateway and API client pairing, with a credential fingerprint and rebuild-on-change. The API client is stateful; sharing one across members would bleed credentials.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><strong>Deployment precondition.</strong> The durable store must live on storage that outlives the container, and the production profile refuses to start on a memory store or a relative path. Confirm the actual mount before the first production deploy — network filesystems and SQLite write-ahead logging do not mix, and whether a given mount refuses loudly or opens quietly with unreliable locking cannot be established from documentation.</div>
+  </div>
+</section>
+
+<section id="mapping">
+  <div class="wrap">
+    <p class="eyebrow">Vocabulary</p>
+    <h2>Connect case status → Intercom ticket state</h2>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Connect status</th><th>Intercom ticket state</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>OPEN</code></td><td>Submitted</td><td>The partner asked; nobody here has answered yet.</td></tr>
+          <tr><td><code>ACCEPTED</code></td><td>In progress</td><td>We took it.</td></tr>
+          <tr><td><code>INFORMATION</code></td><td>Waiting on customer</td><td>Blocked on the partner. Intercom's external label reads "Waiting on you" — cosmetic on Back-office tickets today.</td></tr>
+          <tr><td><code>REJECTED</code></td><td>Resolved</td><td>Terminal. Ticket state alone cannot distinguish declined from finished; the distinction must live on a custom attribute.</td></tr>
+          <tr><td><code>CLOSED</code></td><td>Resolved</td><td>Terminal.</td></tr>
+          <tr><td><code>PENDINGACTION</code></td><td><span class="pill bad">never moved</span></td><td>Undocumented in both contracts — a bare enum member in the spec with no reference documentation. Open question.</td></tr>
+          <tr><td><code>UNKNOWN</code></td><td><span class="pill bad">never moved</span></td><td>An unrecognised wire value by construction. A stale state is visibly wrong; a guessed one is invisibly wrong.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="tight">
+      <li><strong>Read/write asymmetry:</strong> a ticket reads <code>ticket_state</code> as a string, but <code>PUT /tickets/{id}</code> requires a numeric <code>ticket_state_id</code>. The ids are per-workspace and only enumerable under <code>Intercom-Version: Unstable</code>, so resolve them once at configuration time, out of band. Never put <code>Unstable</code> in a runtime path.</li>
+      <li><strong>Verify by id:</strong> under the app's default API version the read-back returns a state object with an <code>id</code>; under 2.11 it returns a bare string <em>and the write is silently ignored</em> — so a string-shaped read-back should throw rather than pass.</li>
+      <li><strong>Closure configuration refuses when unset:</strong> a guessed resolved-state id may not 404, it may name a different real state, moving the ticket somewhere wrong without an error.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="platform">
+  <div class="wrap">
+    <p class="eyebrow">Platform notes</p>
+    <h2>What an implementer needs to know about Intercom</h2>
+    <p>Measured against a free Intercom development workspace (US region) and the TSANet BETA environment. Development workspaces are free, do not expire, and the Tickets API is available in them — but agents need an Inbox seat before a canvas app renders for them, which is free in a dev workspace and not obvious.</p>
+
+    <h3>Surface and placement</h3>
+    <ul class="tight">
+      <li><strong>The panel is server-rendered.</strong> Intercom hosts no third-party code, so the server is yours. This is the whole reason a gateway is required.</li>
+      <li><strong>One placement option for teammates:</strong> "add to conversation details" in the Help Desk. There is no ticket-specific placement toggle, and the documentation describes placement in terms of conversations — but <strong>it does render on ticket detail panels</strong>. Ticket context is detectable by a top-level <code>ticket</code> key, which rides every canvas request from a ticket surface, initialize and submit alike.</li>
+      <li><strong>Response deadline is roughly 10 seconds.</strong> An 8s response renders; a 10s response fails. The failure UX is asymmetric and the asymmetry is the dangerous part: a slow initialize shows an error card with a working "Try again", while a slow submit strands the agent on a spinner with no error at all.</li>
+      <li><strong>A wrong canvas URL fails as a silent infinite spinner</strong> with zero app-side trace — nothing ever reaches your endpoint, so there is nothing to log. When a canvas hangs, verify the pasted initialize and submit URLs before debugging the app.</li>
+    </ul>
+
+    <h3>API behaviour traps</h3>
+    <ul class="tight">
+      <li><strong>Unknown fields return 200 and are silently ignored.</strong> <code>PUT /tickets/{id}</code> with <code>admin_assignee_id</code> returns success and does nothing; the working field is <code>assignee_id</code>. This is why read-back-and-assert is a standing rule.</li>
+      <li><strong><code>POST /conversations</code> returns a message id, not the conversation id.</strong> Reply calls 404 against it. Use the conversation id from a canvas payload or from search.</li>
+      <li><strong>List-typed attributes: <code>list_items</code> is a comma-separated string.</strong> Passing an array returns a 500 — so option labels cannot contain commas.</li>
+      <li><strong>Datetime attributes are epoch seconds.</strong> Round-tripped live.</li>
+      <li><strong>Custom attributes are keyed by name</strong>, both read and write. A workspace-side rename surfaces as a silent read-back failure rather than an error on write.</li>
+      <li><strong>A ticket carries two ids, and they are not interchangeable.</strong> <code>id</code> is the API handle; <code>ticket_id</code> is the number agents see and can search. Send <code>ticket_id</code> to a partner as the case number — a partner quoting the API <code>id</code> sends agents searching for a ticket that does not exist — and use <code>id</code> for API calls.</li>
+      <li><strong>No native priority field on tickets.</strong> Use a custom attribute.</li>
+      <li><strong>Rate limit:</strong> 10,000 requests per minute, per app.</li>
+    </ul>
+
+    <h3>Events</h3>
+    <ul class="tight">
+      <li><strong>Topic subscription is separate from permissions.</strong> A permissions page showing everything enabled does <em>not</em> subscribe any topic. An empty topic list delivers nothing, silently, and looks exactly like a broken endpoint. Select topics explicitly on the Webhooks page.</li>
+      <li><strong>Signatures are byte-exact and differ per endpoint.</strong> Canvas requests use <code>X-Body-Signature</code>, HMAC-SHA256 over the body, bare lowercase hex. Webhooks use <code>X-Hub-Signature</code>, HMAC-SHA1, with a <code>sha1=</code> prefix. Both are keyed on the same app client secret.</li>
+      <li><strong>Delivery contract:</strong> 5 second timeout, one retry, 429 throttling. Intake should fast-ack and hand to a queue, with a reconciliation poller as the source of truth.</li>
+      <li><strong>Payloads are full objects</strong>, unusually generous: ticket topics carry the complete ticket including attributes and contacts. This removes a whole class of follow-up reads — and is the opposite of TSANet's thin payloads.</li>
+      <li><code>ticket.created</code> also fires an initial <code>ticket.state.updated</code>.</li>
+    </ul>
+
+    <h3>Object model and tenancy</h3>
+    <ul class="tight">
+      <li><strong>Cases live on tickets</strong>, under a dedicated collaboration ticket type created with category <code>Back-office</code>.</li>
+      <li><strong>Tickets require exactly one contact</strong>, even Back-office ones. There is no natural TSANet counterpart, so inbound cases use a synthetic partner contact.</li>
+      <li><strong>Tickets are conversation-backed:</strong> the ticket id equals its conversation id.</li>
+      <li><strong>Notes</strong> are <code>POST /tickets/{id}/reply</code> with <code>message_type: note</code>, <code>type: admin</code>, and an <code>admin_id</code>. Back-office tickets carry a "Not shared with customer" badge in the UI.</li>
+      <li><strong>Private app</strong> means single workspace, token auth, no app review — the pilot path, requiring nothing from the vendor. <strong>Public app</strong> means OAuth plus review and App Store distribution, reusable for every Intercom-based member. App review is required for any public app, including unlisted ones.</li>
+      <li><strong>Regions:</strong> US, EU, AU.</li>
+    </ul>
+
+    <div class="note"><strong>Vendor naming.</strong> The company renamed itself Fin in May 2026; the helpdesk product is still called Intercom, and the developer platform is documented as the Intercom and Fin Developer Platform. Expect all three names in the official documentation.</div>
+  </div>
+</section>
+
+<section id="environments">
+  <div class="wrap">
+    <p class="eyebrow">Environments</p>
+    <h2>Hosts, events, and versions</h2>
+    <div class="cols">
+      <div>
+        <h3>Connect API environments</h3>
+        <div class="twrap">
+          <table>
+            <thead><tr><th>Env</th><th>Host</th></tr></thead>
+            <tbody>
+              <tr><td>Beta</td><td><code>connect2.tsanet.net</code></td></tr>
+              <tr><td>Prod</td><td><code>connect2.tsanet.org</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:13.5px"><code>testSubmission</code> stays a per-deployment config flag, default true: creating real partner cases is a deliberate opt-in at pilot time. Note the flag asymmetry — you write <code>testSubmission</code> and read <code>testCase</code>.</p>
+      </div>
+      <div>
+        <h3>Webhook event types (v2)</h3>
+        <ul class="tight" style="font-family:var(--mono);font-size:12.5px">
+          <li>collaboration-request.created <span style="color:var(--mute)">→ inbound ticket create (claimed)</span></li>
+          <li>collaboration-request.closed <span style="color:var(--mute)">→ mirror partner close</span></li>
+          <li>collaboration-request.response.created <span style="color:var(--mute)">→ partner verdict</span></li>
+          <li>collaboration-request.response.updated <span style="color:var(--mute)">→ partner verdict</span></li>
+          <li>collaboration-request.note.created <span style="color:var(--mute)">→ notes slice</span></li>
+        </ul>
+        <p style="font-size:13.5px">All prefixed <code>org.tsanet.connect.</code>. Build against v2 only: v1 is removed in the first part of 2027 — inside this connector's first year — and v1 carries no event-level idempotency key at all.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="wrap">
+    <p class="eyebrow">Honesty section</p>
+    <h2>Deliberately not built, and known gaps</h2>
+    <div class="cols">
+      <ul class="tight">
+        <li><strong>Outbound closure:</strong> an agent resolving the ticket does not close the partner's case. This needs a policy decision on which Intercom state transitions propagate — <code>/closure</code> documents only 200/400, so a wrong guess is indistinguishable from any bad request.</li>
+        <li><strong>Status sync:</strong> the poller recovers missing <em>tickets</em>, not missing <em>state</em>.</li>
+        <li><strong>Notes in both directions</strong>, and the <code>information-response</code> reply leg, land with the notes slice; <code>note.created</code> drains unclaimed today.</li>
+        <li><strong>Multi-case tickets render no panel:</strong> <code>byTicketId</code> correctly refuses to pick between several cases, but the agent currently sees nothing at all. A "this ticket has N collaboration cases" panel is the follow-up.</li>
+      </ul>
+      <ul class="tight">
+        <li><strong>Inbound ambiguity is transient:</strong> an ambiguous response action tells the acting agent, but the recorded state has moved, so a later render shows a cleanly answered case. Outbound has UNRESOLVED for this; inbound has no equivalent yet.</li>
+        <li><strong>Dedupe strategy beyond the CloudEvent id</strong> is a later decision; the reconciliation poller remains the source of truth in both directions.</li>
+        <li><strong><code>PENDINGACTION</code></strong> is undefined in both contracts — an open question for TSANet.</li>
+        <li><strong>Orphaned claims</strong> hold the poller cursor loudly and indefinitely until a human releases them. Alert on consecutive held cycles, not on consecutive failures.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
