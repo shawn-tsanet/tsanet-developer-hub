@@ -240,7 +240,12 @@
       <h4>Note content comes back as HTML</h4>
       <p>Both <code>summary</code> and <code>description</code> return with markup. Strip to plain text before display in a non-HTML surface. The process form's <code>adminNote</code> is the exception — that one renders.</p>
     </div>
-    <p>Attachments use an HTTPS push arrangement that only works once <strong>both sides</strong> have configured endpoints, which makes it a two-party setup step rather than something you can finish alone. The SDK ships a receiver module so you do not have to build the receiving end yourself.</p>
+    <div class="gotcha">
+      <h4>Attachments are a two-party setup, and the platform stores nothing</h4>
+      <p>A forward is delivered straight to the other party's registered endpoint — there is no attachment store, and no endpoint that lists files on a case. Delivery also fans out to <em>your own</em> registered endpoint, so an integration that only ever sends still wants one: without it every forward reports <code>submitterStatus: CONFIG_MISSING</code> and you keep no copy of what you sent.</p>
+      <p>Two things the platform will not do for you: it creates <strong>no case note</strong> announcing the file, and it keeps <strong>no history</strong>. Both are yours to build.</p>
+      <p class="where">Full model in <a href="../docs/tsanet-2026-002-case-attachments.html">TSANET-2026-002</a></p>
+    </div>
     <p class="where" style="font-family:var(--mono);font-size:11.5px;color:var(--mute)">Note-visibility modelling across three audiences: <a href="../connectors/zendesk.html#notes" style="color:var(--blue)">Zendesk → Note visibility</a></p>
   </div>
 </section>
