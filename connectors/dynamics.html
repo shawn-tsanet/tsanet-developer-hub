@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft Dynamics connector — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  td.next{color:var(--ink);background:rgba(0,91,130,.05)}
+  thead th.next{background:rgba(0,91,130,.05);color:var(--blue)}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink);margin:16px 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  .c{color:var(--mute)}
+  .obj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:18px}
+  .obj{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:16px 18px}
+  .obj h4{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--deep);margin-bottom:6px}
+  .obj p{font-size:13px;color:var(--slate);margin:0;line-height:1.55}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors" aria-current="page">Connectors</a>
+      <a href="../index.html#api">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / <a href="../index.html#connectors">Connectors</a> / Microsoft Dynamics</div>
+    <h1>Microsoft Dynamics</h1>
+    <p class="lede">A managed Power Platform solution installed into your own environment: Dataverse tables, a plugin assembly, Power Automate flows, and web resources on the Case form. Where the Salesforce connector extends through Flow, this one extends through a configuration table — field mapping is data, not code.</p>
+    <div class="meta-row">
+      <span><b>Class</b> In-tenant</span>
+      <span><b>Status</b> GA · managed solution</span>
+      <span><b>Surface</b> Case form + TSANET Configuration app</span>
+      <span><b>Repo</b> tsanetgit/MS_Power_App</span>
+    </div>
+    <div class="toc">
+      <a href="#class">Connector class</a>
+      <a href="#topology">Architecture</a>
+      <a href="#data">Dataverse tables</a>
+      <a href="#auth">Authentication</a>
+      <a href="#mapping">Case Mapping</a>
+      <a href="#automation">Automation</a>
+      <a href="#sync">Sync &amp; webhooks</a>
+      <a href="#setup">Setup</a>
+      <a href="#gotchas">Limits &amp; gotchas</a>
+    </div>
+  </div>
+</header>
+
+<section id="class">
+  <div class="wrap">
+    <p class="eyebrow">Connector class</p>
+    <h2>The second in-tenant connector, with a different extension model</h2>
+    <p>Like <a href="salesforce.html">Salesforce</a>, everything here installs into the member's own environment and TSANet operates nothing. <a href="fin-intercom.html">Intercom</a> is the opposite pole — a TSANet-hosted gateway, because nothing can run in-tenant at all — and <a href="zendesk.html">Zendesk</a> sits between. What distinguishes Dynamics from Salesforce is not <em>where</em> the code runs but <em>how you change its behaviour</em>.</p>
+    <div class="twrap">
+      <table>
+        <caption>Both are managed packages in the member's tenant. The difference is where a member goes when the default behaviour is not what they want.</caption>
+        <thead><tr><th scope="col">&nbsp;</th><th scope="col">Salesforce</th><th scope="col" class="next">Dynamics</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Server-side code</th><td>Apex classes</td><td class="next">Plugin assembly (.NET), registered on SDK messages</td></tr>
+          <tr><th scope="row">Automation</th><td>Flow library, clone and edit</td><td class="next">Power Automate cloud flows</td></tr>
+          <tr><th scope="row">Field mapping</th><td>Written into the flow</td><td class="next"><span class="pill info">a configuration table</span></td></tr>
+          <tr><th scope="row">UI surface</th><td>Lightning Web Components</td><td class="next">HTML + JavaScript web resources on the Case form</td></tr>
+          <tr><th scope="row">Feature toggles</th><td>Flow activation</td><td class="next">Environment variables</td></tr>
+          <tr><th scope="row">Inbound delivery</th><td>Apex REST on a public Site</td><td class="next">Registered webhook to Power Automate, or the scheduled poll</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>That third row is the one to notice. Mapping a TSANet field onto a Dynamics column is a record in the <strong>TSANet Case Mapping</strong> table, not a step in a flow — so a member can retarget the integration without opening an editor, and an admin who has never seen Power Automate can still change what lands where.</p>
+  </div>
+</section>
+
+<section id="topology">
+  <div class="wrap">
+    <p class="eyebrow">Architecture</p>
+    <h2>What the solution installs</h2>
+    <p>A managed solution containing six Dataverse tables, a plugin assembly registered against roughly fifteen SDK message steps, a set of Power Automate cloud flows, a model-driven configuration app, a canvas app for connection settings, and the web resources that render the collaboration UI on the Case form.</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1160 660" style="min-width:1040px" role="img" aria-label="Architecture: the support engineer and admin on the left; inside the member's Power Platform environment, Case form web resources, configuration apps, a plugin assembly, Power Automate cloud flows, Dataverse tables and configuration records; the TSANet Connect API, webhook push and partner member on the right.">
+          <defs>
+            <marker id="dI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker>
+            <marker id="dA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--blue)"/></marker>
+          </defs>
+
+          <!-- LEFT -->
+          <rect class="bx-ext" x="16" y="100" width="238" height="110" rx="8"/>
+          <text class="tt" x="30" y="122">Support engineer</text>
+          <text class="ts" x="30" y="141">Dynamics Case form</text>
+          <text class="ts" x="30" y="157">TSANet Case subgrid</text>
+          <text class="ts" x="30" y="173">Accept · Reject · Request info</text>
+          <text class="ts" x="30" y="189">Send info · Close · Add note</text>
+
+          <rect class="bx-ext" x="16" y="266" width="238" height="106" rx="8"/>
+          <text class="tt" x="30" y="288">Administrator</text>
+          <text class="ts" x="30" y="307">TSANET Configuration app</text>
+          <text class="ts" x="30" y="323">edits Case Mapping records</text>
+          <text class="ts" x="30" y="339">toggles environment variables</text>
+          <text class="ts" x="30" y="355">assigns the TSANET User role</text>
+
+          <rect class="bx-ext" x="16" y="428" width="238" height="92" rx="8"/>
+          <text class="tt" x="30" y="450">Views &amp; dashboards</text>
+          <text class="ts" x="30" y="469">Dataverse tables are first-class</text>
+          <text class="ts" x="30" y="485">standard model-driven views</text>
+          <text class="ts" x="30" y="501">no extra plumbing needed</text>
+
+          <!-- CENTER -->
+          <rect class="lnA" x="300" y="44" width="560" height="580" rx="12" fill="none"/>
+          <text class="tt" x="316" y="68">the member's own Power Platform environment · managed solution</text>
+
+          <rect class="bx" x="326" y="96" width="240" height="112" rx="8"/>
+          <text class="tt" x="338" y="118">Case form web resources</text>
+          <text class="ts" x="338" y="137">ap_CaseCreateForm.html</text>
+          <text class="ts" x="338" y="153">CaseTSA.js · CaseTSAButtons.js</text>
+          <text class="ts" x="338" y="169">CaseResponse.js · CommonScripts.js</text>
+          <text class="ts" x="338" y="185">CommonIntegration.js → plugins</text>
+          <text class="tl" x="338" y="201">HTML + JS, not a PCF control</text>
+
+          <rect class="bx" x="596" y="96" width="240" height="112" rx="8"/>
+          <text class="tt" x="608" y="118">Configuration apps</text>
+          <text class="ts" x="608" y="137">TSANET Configuration</text>
+          <text class="ts" x="608" y="153">  model-driven app + sitemap</text>
+          <text class="ts" x="608" y="169">Connection Settings canvas app</text>
+          <text class="ts" x="608" y="185">Register webhook button</text>
+          <text class="tl" x="608" y="201">where credentials and mapping live</text>
+
+          <rect class="bx-acc" x="326" y="240" width="240" height="116" rx="8"/>
+          <text class="tt" x="338" y="262">Plugin assembly</text>
+          <text class="ts" x="338" y="281">TSANetPlugins.dll · server-side</text>
+          <text class="ts" x="338" y="297">GetCase · GetCompany · GetForm</text>
+          <text class="ts" x="338" y="313">PostCase · Approval · Note</text>
+          <text class="ts" x="338" y="329">PostCaseResponseOnCreate</text>
+          <text class="tl" x="338" y="347">~15 registered SDK message steps</text>
+
+          <rect class="bx" x="596" y="240" width="240" height="116" rx="8"/>
+          <text class="tt" x="608" y="262">Power Automate flows</text>
+          <text class="ts" x="608" y="281">Child flow: Login → token</text>
+          <text class="ts" x="608" y="297">Scheduled: cases · responses · notes</text>
+          <text class="ts" x="608" y="313">On Create Case — Auto Route</text>
+          <text class="ts" x="608" y="329">webhook-triggered handlers</text>
+          <text class="tl" x="608" y="347">the customisation surface for routing</text>
+
+          <rect class="bx-grn" x="326" y="388" width="510" height="118" rx="8"/>
+          <text class="tt" x="338" y="410">Dataverse tables · the durable state, and it is yours</text>
+          <text class="ts" x="338" y="429">ap_tsanetcase — direction · statuscode · ap_formjson (200K memo)</text>
+          <text class="ts" x="338" y="445">ap_tsanetnote · ap_tsanetresponse · ap_tsanetlog</text>
+          <text class="ts" x="338" y="461">ap_tsanetsetting — client id · secret · URI (400 chars)</text>
+          <text class="ts" x="338" y="477">ap_casemapping — the declarative field-mapping configuration</text>
+          <text class="tl" x="338" y="497">option sets: ap_direction · ap_priorities · ap_tsaresponsetypes · ap_sourcesystem</text>
+
+          <rect class="bx" x="326" y="538" width="510" height="66" rx="8"/>
+          <text class="tt" x="338" y="560">Environment variables · feature toggles</text>
+          <text class="ts" x="338" y="579">Auto Create TSANote by Email · Auto Create TSANote by Note</text>
+          <text class="ts" x="338" y="595">Auto Routing of New Case</text>
+
+          <!-- RIGHT -->
+          <rect class="bx-ext" x="904" y="96" width="240" height="180" rx="8"/>
+          <text class="tt" x="918" y="118">TSANet Connect API</text>
+          <text class="ts" x="918" y="137">company search · company form</text>
+          <text class="ts" x="918" y="153">create collaboration case</text>
+          <text class="ts" x="918" y="169">approval · approval update</text>
+          <text class="ts" x="918" y="185">rejection · information · closure</text>
+          <text class="ts" x="918" y="201">case notes</text>
+          <text class="ts" x="918" y="217">OAuth2 or Bearer, per environment</text>
+          <text class="tl" x="918" y="238">Developer · Beta · Production</text>
+          <text class="tl" x="918" y="256">endpoint held in ap_tsanetsetting</text>
+
+          <rect class="bx-ext" x="904" y="300" width="240" height="110" rx="8"/>
+          <text class="tt" x="918" y="322">TSANet webhook push</text>
+          <text class="ts" x="918" y="341">registered from the config app</text>
+          <text class="ts" x="918" y="357">targets a Power Automate endpoint</text>
+          <text class="ts" x="918" y="373">case and note events</text>
+          <text class="tl" x="918" y="393">optional — polling is the default</text>
+
+          <rect class="bx-ext" x="904" y="440" width="240" height="80" rx="8"/>
+          <text class="tt" x="918" y="462">Partner member</text>
+          <text class="ts" x="918" y="481">works the same case from their</text>
+          <text class="ts" x="918" y="497">own connector or the web app</text>
+
+          <!-- EDGES -->
+          <path class="lnA" d="M254,152 H320" marker-end="url(#dA)"/>
+          <circle class="bdg" cx="287" cy="152" r="10"/><text class="bdgT" x="287" y="156" text-anchor="middle">1</text>
+
+          <path class="lnA" d="M446,356 V372 H886 V230 H898" marker-end="url(#dA)"/>
+          <circle class="bdg" cx="886" cy="300" r="10"/><text class="bdgT" x="886" y="304" text-anchor="middle">2</text>
+
+          <path class="lnA" d="M836,260 H868 V180 H898" marker-end="url(#dA)"/>
+          <circle class="bdg" cx="868" cy="215" r="10"/><text class="bdgT" x="868" y="219" text-anchor="middle">3</text>
+
+          <path class="lnA" d="M904,350 H852 V330 H842" marker-end="url(#dA)"/>
+          <circle class="bdg" cx="874" cy="350" r="10"/><text class="bdgT" x="874" y="354" text-anchor="middle">4</text>
+
+          <!-- internal -->
+          <path class="ln" d="M446,208 V236" marker-end="url(#dI)"/>
+          <text class="tl" x="454" y="228">custom actions</text>
+          <path class="ln" d="M716,208 V236" marker-end="url(#dI)"/>
+          <path class="ln" d="M566,152 H590" marker-end="url(#dI)"/>
+          <path class="ln" d="M446,356 V384" marker-end="url(#dI)"/>
+          <text class="tl" x="454" y="378">read / write</text>
+          <path class="ln" d="M716,356 V384" marker-end="url(#dI)"/>
+          <path class="ln" d="M581,506 V534" marker-end="url(#dI)"/>
+          <path class="ln" d="M254,318 H286 V150 H320" marker-end="url(#dI)"/>
+          <text class="tl" x="262" y="250">configures</text>
+          <path class="ln" d="M326,470 H290 V474 H260" marker-end="url(#dI)"/>
+          <text class="tl" x="292" y="464" text-anchor="middle">reports on</text>
+        </svg>
+      </div>
+      <figcaption>Everything inside the outlined box is installed by the managed solution into the member's own Power Platform environment. Accent edges leave the environment; plain edges are internal. The green band is the durable state, held in Dataverse tables the member owns and governs.</figcaption>
+    </figure>
+    <ul class="legend">
+      <li><span class="n">1</span><span><b>Agent actions.</b> The Case form's web resources render the collaboration UI and the action buttons. <code>CommonIntegration.js</code> is the bridge from the browser to the plugin layer.</span></li>
+      <li><span class="n">2</span><span><b>Plugin callouts.</b> Server-side .NET calls to the Connect API — the synchronous path behind every agent action.</span></li>
+      <li><span class="n">3</span><span><b>Flow callouts.</b> The scheduled sync and the auto-route flow, authenticating through the child Login flow.</span></li>
+      <li><span class="n">4</span><span><b>Inbound push.</b> Optional. Registering a webhook points TSANet at a Power Automate endpoint for near-real-time case and note delivery, instead of waiting for the next poll.</span></li>
+    </ul>
+    <div class="note"><strong>On the UI mechanism.</strong> The published user guide describes the Case form integration as a "Lightning Web Component". That is Salesforce terminology and does not apply here — the Dynamics solution ships an HTML web resource (<code>ap_CaseCreateForm.html</code>) plus a set of JavaScript web resources. If you are following that guide, read "LWC" as "web resource".</div>
+  </div>
+</section>
+
+<section id="data">
+  <div class="wrap">
+    <p class="eyebrow">Data model</p>
+    <h2>Six Dataverse tables</h2>
+    <div class="obj-grid">
+      <div class="obj"><h4>ap_tsanetcase</h4><p>The collaboration record. <code>ap_name</code> is the TSANet identifier (100 chars), <code>ap_direction</code> is inbound or outbound, and <code>statuscode</code> carries Open, Information, Accepted, Rejected or Closed. <code>ap_formjson</code> holds the live form payload as a 200,000-character memo.</p></div>
+      <div class="obj"><h4>ap_tsanetnote</h4><p>Notes against a case — <code>ap_description</code> up to 2,000 characters, plus creator name and email, related back through <code>ap_tsanetcaseid</code>.</p></div>
+      <div class="obj"><h4>ap_tsanetresponse</h4><p>Formal replies on inbound cases. The response type option set covers approval, rejection, information request, information response, close and approval update.</p></div>
+      <div class="obj"><h4>ap_tsanetsetting</h4><p>Connection configuration: client id, secret, and the environment URI (capped at 400 characters). Edited through the Connection Settings canvas app.</p></div>
+      <div class="obj"><h4>ap_casemapping</h4><p>The declarative field-mapping configuration — see below. This is the table that makes the connector reconfigurable without code.</p></div>
+      <div class="obj"><h4>ap_tsanetlog</h4><p>Integration logging. The first place to look when a sync cycle or a plugin step misbehaves.</p></div>
+    </div>
+    <p style="margin-top:18px">Four option sets ship alongside: <code>ap_direction</code>, <code>ap_priorities</code>, <code>ap_tsaresponsetypes</code> and <code>ap_sourcesystem</code>. Because these are ordinary Dataverse tables, they carry standard views, are reportable, and obey your environment's security model — a <strong>TSANET User</strong> security role granting access to the case, note and response tables ships with the solution.</p>
+    <h3>Relating TSANet cases to your own tables</h3>
+    <p>To surface collaborations against something other than the standard Case, add the TSANet tables to your own unmanaged solution, create a lookup from your table to <code>ap_tsanetcase</code>, and drop a subgrid on the form with <em>Show related records</em> enabled. Nothing in the managed solution needs changing.</p>
+  </div>
+</section>
+
+<section id="auth">
+  <div class="wrap">
+    <p class="eyebrow">Authentication</p>
+    <h2>OAuth2 or Bearer, and they are mutually exclusive</h2>
+    <p>Credentials live in <code>ap_tsanetsetting</code> and are entered through the TSANET Configuration app: a client id, a secret, and the environment URI. A given environment uses <strong>either</strong> OAuth2 <strong>or</strong> a bearer token — not both, and not a fallback from one to the other. Picking the wrong one for the credentials TSANet issued you is a common first-install failure.</p>
+    <ul class="tight">
+      <li><strong>The URI field caps at 400 characters.</strong> Not usually a constraint, but worth knowing if you are templating environment URLs.</li>
+      <li><strong>Three environments:</strong> Developer (for modifying the package), Beta (member testing), and Production. Credentials and endpoints come from <code>membership@tsanet.org</code>.</li>
+      <li><strong>Flows authenticate through a child flow.</strong> A dedicated <em>Login</em> child flow authorizes API requests and returns the token, so the credential handling lives in one place rather than being repeated per flow.</li>
+      <li><strong>Connection references are validated at import.</strong> The solution will not finish importing until every connection resolves, which is why credentials are requested during the import wizard rather than after.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="mapping">
+  <div class="wrap">
+    <p class="eyebrow">Case Mapping</p>
+    <h2>Field mapping as configuration, not code</h2>
+    <p>This is the connector's distinguishing feature. Rather than editing a flow to change which TSANet field lands on which Dynamics column, you create records in <code>ap_casemapping</code>. Three mapping types cover the three places a mapping is needed:</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Mapping type</th><th>What it drives</th></tr></thead>
+        <tbody>
+          <tr><td>Response Form</td><td>Prefilling the form an agent sees when responding to an inbound case</td></tr>
+          <tr><td>Case Create</td><td>Building the Dynamics Case created when a collaboration is accepted</td></tr>
+          <tr><td>TSA Case default prefill</td><td>Seeding a new outbound collaboration from the originating record</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="tight">
+      <li><strong>JSON path notation</strong> reaches nested values inside the form payload, so a mapping is not restricted to top-level fields.</li>
+      <li><strong>Expand notation</strong> reaches attributes on related tables, which is what makes cross-table prefill possible — pulling an account or asset attribute onto a response form without writing a query.</li>
+      <li><strong>Lookup references</strong> are supported, with one limit: a lookup search attribute can target only a single entity. A polymorphic lookup will not resolve.</li>
+    </ul>
+    <div class="note">Because mapping is data, it moves with your environment the way data does — not the way solution components do. Plan for it in your environment-promotion process, or a mapping tuned in test will not be present in production.</div>
+  </div>
+</section>
+
+<section id="automation">
+  <div class="wrap">
+    <p class="eyebrow">Automation</p>
+    <h2>What runs without an agent touching it</h2>
+    <p>Three environment variables toggle the automatic behaviours, so a member can adopt them one at a time rather than all at once.</p>
+    <div class="cols">
+      <ul class="tight">
+        <li><strong>Auto Create TSANote by Email</strong> — a Dynamics email activity linked to the case becomes a TSANet note, so partner-visible correspondence does not have to be re-entered.</li>
+        <li><strong>Auto Create TSANote by Note</strong> — the same for notes added manually to the Dynamics Case.</li>
+        <li><strong>Auto Routing of New Case</strong> — the inbound path described below.</li>
+      </ul>
+      <ul class="tight">
+        <li><strong>Case response automation</strong> — accepting a TSA case creates the corresponding Dynamics Case using the Case Create mapping, with required fields configurable.</li>
+        <li><strong>Ownership and assignment changes</strong> propagate back to the collaborating member, appearing on their timeline.</li>
+        <li><strong>Automatic closure</strong> after 30 days of inactivity, matching the platform behaviour on the other connectors.</li>
+      </ul>
+    </div>
+
+    <h3>Inbound auto-routing</h3>
+    <p>With <em>Auto Routing of New Case</em> enabled, an arriving collaboration tries to attach itself to work that already exists before creating anything new:</p>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1060 250" style="min-width:940px" role="img" aria-label="Auto-routing: an inbound TSA case is matched first by customer case number, then by customer name; a match auto-creates and relates a Dynamics case and approves the collaboration, while no match leaves the case for manual handling.">
+          <defs><marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+
+          <rect class="bx-ext" x="16" y="92" width="160" height="56" rx="7"/>
+          <text class="tt" x="96" y="116" text-anchor="middle">Inbound TSA case</text>
+          <text class="tl" x="96" y="134" text-anchor="middle">arrives by push or poll</text>
+
+          <path class="ln" d="M176,120 H228" marker-end="url(#arA)"/>
+
+          <rect class="bx" x="234" y="92" width="190" height="56" rx="7"/>
+          <text class="ts" x="248" y="114">match on Customer</text>
+          <text class="ts" x="248" y="130">Case Number</text>
+
+          <path class="ln" d="M424,120 H478" marker-end="url(#arA)"/>
+          <text class="tl" x="451" y="112" text-anchor="middle">no hit</text>
+
+          <rect class="bx" x="484" y="92" width="190" height="56" rx="7"/>
+          <text class="ts" x="498" y="114">fall back to customer</text>
+          <text class="ts" x="498" y="130">name lookup</text>
+
+          <path class="ln" d="M674,108 C712,96 720,60 748,54" marker-end="url(#arA)"/>
+          <text class="tl" x="700" y="86">match</text>
+          <rect class="bx-grn" x="754" y="26" width="290" height="58" rx="7"/>
+          <text class="ts" x="768" y="48">auto-create + relate the Dynamics Case</text>
+          <text class="ts" x="768" y="64">then auto-approve the collaboration</text>
+
+          <path class="ln" d="M674,132 C712,144 720,180 748,186" marker-end="url(#arA)"/>
+          <text class="tl" x="694" y="176">no match</text>
+          <rect class="bx" x="754" y="158" width="290" height="58" rx="7" style="stroke:var(--amber)"/>
+          <text class="ts" x="768" y="180">left for manual handling</text>
+          <text class="tl" x="768" y="198">the agent decides where it belongs</text>
+        </svg>
+      </div>
+      <figcaption>Matching on the partner's own case number first is what makes re-collaboration on an existing issue attach to the same Dynamics case rather than opening a duplicate. The matching logic lives in the <em>On Create Case — Auto Route</em> flow and is the intended place to customise: swap the match on entitlement, contract or account tier and the rest is unchanged.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="sync">
+  <div class="wrap">
+    <p class="eyebrow">Synchronisation</p>
+    <h2>Polling by default, push if you register it</h2>
+    <p>The solution ships with scheduled Power Automate flows that poll the Connect API on a <strong>15-minute</strong> interval, retrieving case status and creating inbound cases, responses and notes. Agents can force an update from the main navigation rather than waiting for the next cycle.</p>
+    <p>Near-real-time delivery is opt-in: the <strong>Register webhook</strong> button in the configuration app points TSANet at a Power Automate endpoint so case and note events arrive as they happen. Registering it does not retire the schedule — the poll remains the backstop, which is the same belt-and-braces arrangement the other connectors use.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Path</th><th>Latency</th><th>Setup</th></tr></thead>
+        <tbody>
+          <tr><td>Scheduled flow</td><td>Up to 15 minutes</td><td>Ships enabled — nothing to configure</td></tr>
+          <tr><td>Registered webhook</td><td>Near-real-time</td><td>One button in the configuration app</td></tr>
+          <tr><td>Manual refresh</td><td>Immediate</td><td>Available to agents from the nav</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="setup">
+  <div class="wrap">
+    <p class="eyebrow">Setup</p>
+    <h2>Installation order</h2>
+    <div class="cols">
+      <div>
+        <h3>Import the solution</h3>
+        <ul class="tight">
+          <li>Request credentials and environment URLs from <code>membership@tsanet.org</code></li>
+          <li>Install from Microsoft AppSource, or download the managed solution from the GitHub releases page</li>
+          <li>At <code>make.powerapps.com</code>, select the target environment and run Import Solution</li>
+          <li>Create the connections when prompted — the import validates every connection reference before it completes</li>
+          <li>Supply the TSANet credentials and endpoint during import</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Configure</h3>
+        <ul class="tight">
+          <li>Open the TSANET Configuration app and enter client id, secret and URI; choose OAuth2 or Bearer</li>
+          <li>Assign the <strong>TSANET User</strong> security role at <code>admin.powerplatform.microsoft.com</code></li>
+          <li>Set the three environment variables to match the automation you want</li>
+          <li>Create Case Mapping records for the three mapping types</li>
+          <li>Optionally click <strong>Register webhook</strong> for near-real-time delivery</li>
+          <li>Add the TSANet Case subgrid to the Case form, and to any custom table you want collaborations against</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="gotchas">
+  <div class="wrap">
+    <p class="eyebrow">Limits &amp; gotchas</p>
+    <h2>Constraints worth knowing before you design around them</h2>
+    <div class="cols">
+      <ul class="tight">
+        <li><strong>OAuth2 and Bearer are mutually exclusive per environment.</strong> There is no fallback between them; the wrong choice fails at the first call.</li>
+        <li><strong><code>ap_formjson</code> caps at 200,000 characters.</strong> Large process forms with many fields and long option lists are the realistic way to approach it.</li>
+        <li><strong>Lookup search attributes target a single entity only.</strong> A polymorphic lookup will not resolve through Case Mapping.</li>
+        <li><strong>The URI field caps at 400 characters.</strong></li>
+      </ul>
+      <ul class="tight">
+        <li><strong>Scheduled flows are the default, not real time.</strong> If a member expects instant inbound delivery, register the webhook — otherwise plan around a 15-minute worst case.</li>
+        <li><strong>Routing customisation needs Power Automate editor access.</strong> Field mapping does not, but changing <em>how</em> a case is matched does.</li>
+        <li><strong>Mapping records are data.</strong> They do not travel with a solution export; include them in your environment-promotion plan.</li>
+        <li><strong>Check <code>ap_tsanetlog</code> first</strong> when something silently fails — it is the integration's own log table.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
