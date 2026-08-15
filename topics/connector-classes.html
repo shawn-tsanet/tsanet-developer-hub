@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two ways to build a connector — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  td.next{color:var(--ink);background:rgba(0,91,130,.05)}
+  thead th.next{background:rgba(0,91,130,.05);color:var(--blue)}
+  .flag{color:var(--orange);font-weight:600}
+  .classcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:22px 24px;border-top:3px solid var(--line)}
+  .classcard.intenant{border-top-color:var(--green)}
+  .classcard.hybrid{border-top-color:var(--cyan)}
+  .classcard.gateway{border-top-color:var(--orange)}
+  .classcard h3{margin:0 0 4px;font-size:18px}
+  .classcard .who{font-family:var(--mono);font-size:11.5px;color:var(--mute);margin-bottom:12px}
+  .classcard p{font-size:14px;margin-bottom:10px}
+  .classcard ul{list-style:none;display:grid;gap:7px;margin-top:12px}
+  .classcard li{font-size:13.5px;color:var(--slate);padding-left:15px;position:relative;line-height:1.5}
+  .classcard li::before{content:"";position:absolute;left:0;top:8px;width:4px;height:4px;border-radius:50%;background:var(--cyan)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors">Connectors</a>
+      <a href="../index.html#api">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics" aria-current="page">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / <a href="../index.html#topics">Topics</a> / Connector classes</div>
+    <h1>Two ways to build a connector</h1>
+    <p class="lede">Every integration decision downstream — who operates it, where credentials live, what happens when it breaks, how members upgrade — is decided by one question about your platform. Ask it first, because the answer is not yours to choose.</p>
+    <div class="meta-row">
+      <span><b>Topic</b> Integration architecture</span>
+      <span><b>Grounded in</b> Five connectors</span>
+      <span><b>Audience</b> Anyone scoping an integration</span>
+    </div>
+    <div class="toc">
+      <a href="#question">The question</a>
+      <a href="#classes">The three classes</a>
+      <a href="#consequences">What follows</a>
+      <a href="#deciding">Deciding for your platform</a>
+      <a href="#middle">When the answer is "sort of"</a>
+    </div>
+  </div>
+</header>
+
+<section id="question">
+  <div class="wrap">
+    <p class="eyebrow">The question</p>
+    <h2>Will the platform run your code inside the member's own tenant?</h2>
+    <p>That is the whole taxonomy. Not which CRM it is, not how good the API is, not whether it has webhooks — whether the platform will host and execute integration code on the member's behalf, inside their instance.</p>
+    <p>It sounds like an implementation detail and it is the opposite. It determines who is on call when the integration breaks, whose infrastructure holds the member's case data in transit, whether one member's failure is everyone's failure, and whether shipping a fix means asking every member to upgrade something. Get it wrong at scoping time and you discover it during the build, when the cost of changing course is highest.</p>
+    <div class="note"><strong>The answer is a property of the platform, not a preference.</strong> No amount of design work turns a platform that hosts no third-party code into one that does. What you choose is how much lives where the platform <em>does</em> allow it — which is a real decision, and a different one.</div>
+  </div>
+</section>
+
+<section id="classes">
+  <div class="wrap">
+    <p class="eyebrow">The three classes</p>
+    <h2>Where the platforms actually fall</h2>
+    <div class="grid g3" style="margin-bottom:26px">
+      <div class="classcard intenant">
+        <h3>In-tenant</h3>
+        <div class="who">Salesforce · Dynamics</div>
+        <p>The platform runs real code in the member's own instance. Apex classes, plugin assemblies, declarative automation — all executing under the member's governance.</p>
+        <ul>
+          <li>The member operates it</li>
+          <li>Credentials never leave their tenant</li>
+          <li>State lives in first-class platform objects</li>
+          <li>A break affects one member</li>
+          <li>Shipping a fix means every member upgrades</li>
+        </ul>
+      </div>
+      <div class="classcard hybrid">
+        <h3>Partial</h3>
+        <div class="who">Zendesk</div>
+        <p>Client-side apps in a sandbox and platform-hosted declarative flows, but nowhere to put arbitrary server code. Some logic has a home in-tenant; not all of it.</p>
+        <ul>
+          <li>The member still operates it</li>
+          <li>Credentials stay in their tenant</li>
+          <li>State lives in platform fields and tags</li>
+          <li>A break affects one member</li>
+          <li>Anything the sandbox cannot express has no home</li>
+        </ul>
+      </div>
+      <div class="classcard gateway">
+        <h3>Gateway</h3>
+        <div class="who">Fin / Intercom</div>
+        <p>The platform hosts no third-party code at all. Panels are pages served from elsewhere and framed in; there is no installed package to speak of.</p>
+        <ul>
+          <li>TSANet operates it</li>
+          <li>Credentials sit with TSANet, one set per member</li>
+          <li>The gateway must hold lifecycle state itself</li>
+          <li><span class="flag">A break affects every member on it</span></li>
+          <li>Fixes ship centrally, with nothing to upgrade</li>
+        </ul>
+      </div>
+    </div>
+
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 250" style="min-width:880px" role="img" aria-label="A spectrum from fully in-tenant to fully gateway-hosted, showing where Salesforce and Dynamics, Zendesk, and Intercom fall, with the operator and blast radius changing along it.">
+          <line x1="180" y1="70" x2="940" y2="70" stroke="var(--line)" stroke-width="2"/>
+
+          <circle cx="265" cy="70" r="9" fill="var(--green)"/>
+          <circle cx="570" cy="70" r="9" fill="var(--cyan)"/>
+          <circle cx="858" cy="70" r="9" fill="var(--orange)"/>
+
+          <text class="tt" x="265" y="46" text-anchor="middle">In-tenant</text>
+          <text class="tt" x="570" y="46" text-anchor="middle">Partial</text>
+          <text class="tt" x="858" y="46" text-anchor="middle">Gateway</text>
+
+          <text class="ts" x="265" y="98" text-anchor="middle">Salesforce · Dynamics</text>
+          <text class="ts" x="570" y="98" text-anchor="middle">Zendesk</text>
+          <text class="ts" x="858" y="98" text-anchor="middle">Fin / Intercom</text>
+
+          <text class="tl" x="16" y="140">Operated by</text>
+          <text class="ts" x="265" y="140" text-anchor="middle">the member</text>
+          <text class="ts" x="570" y="140" text-anchor="middle">the member</text>
+          <text class="ts" x="858" y="140" text-anchor="middle" style="fill:var(--orange)">TSANet</text>
+
+          <text class="tl" x="16" y="168">Credentials</text>
+          <text class="ts" x="265" y="168" text-anchor="middle">their tenant</text>
+          <text class="ts" x="570" y="168" text-anchor="middle">their tenant</text>
+          <text class="ts" x="858" y="168" text-anchor="middle" style="fill:var(--orange)">with TSANet</text>
+
+          <text class="tl" x="16" y="196">If it breaks</text>
+          <text class="ts" x="265" y="196" text-anchor="middle">one member</text>
+          <text class="ts" x="570" y="196" text-anchor="middle">one member</text>
+          <text class="ts" x="858" y="196" text-anchor="middle" style="fill:var(--orange)">everyone on it</text>
+
+          <text class="tl" x="16" y="224">Shipping a fix</text>
+          <text class="ts" x="265" y="224" text-anchor="middle">every member upgrades</text>
+          <text class="ts" x="570" y="224" text-anchor="middle">every member upgrades</text>
+          <text class="ts" x="858" y="224" text-anchor="middle" style="fill:var(--green)">centrally, nothing to do</text>
+
+          <path d="M180,70 H256" stroke="var(--green)" stroke-width="3"/>
+          <path d="M867,70 H940" stroke="var(--orange)" stroke-width="3"/>
+        </svg>
+      </div>
+      <figcaption>The trade is symmetric, which is what makes it a real decision rather than a ranking. In-tenant distributes both the operating burden and the failure domain; a gateway centralises both. Neither is better in the abstract.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="consequences">
+  <div class="wrap">
+    <p class="eyebrow">What follows</p>
+    <h2>The consequences you inherit</h2>
+    <div class="twrap">
+      <table>
+        <caption>Every row here was a design decision on at least one shipped connector, made because of the class rather than in spite of it.</caption>
+        <thead><tr><th scope="col">&nbsp;</th><th scope="col">In-tenant</th><th scope="col" class="next">Gateway</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Reconciliation</th><td>Scheduled jobs the platform runs for you</td><td class="next">A poller you build, operate and monitor</td></tr>
+          <tr><th scope="row">Durable state</th><td>Platform objects — reportable, governed by their sharing model</td><td class="next">A store you run, back up and keep consistent with the platform</td></tr>
+          <tr><th scope="row">Inbound delivery</th><td>An endpoint inside the tenant, or the platform's own event machinery</td><td class="next">Your endpoint, your signature verification, your dedupe</td></tr>
+          <tr><th scope="row">Deployment</th><td>A package a member installs and later upgrades</td><td class="next">A service you deploy; members install little or nothing</td></tr>
+          <tr><th scope="row">Data residency</th><td>Case content never leaves the member's tenant</td><td class="next">Case content transits infrastructure TSANet operates</td></tr>
+          <tr><th scope="row">Blast radius</th><td>One member at a time</td><td class="next"><span class="flag">Correlated across every member on the gateway</span></td></tr>
+          <tr><th scope="row">Release cadence</th><td>Gated by member upgrade appetite and any store review</td><td class="next">As fast as you can deploy safely</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The row that most often gets under-weighted at scoping time is <strong>data residency</strong>, because it is a procurement question rather than an engineering one. A member whose policy says case content stays on their infrastructure has effectively ruled out the gateway class before the first design meeting — and will say so late, after review, unless someone asks early.</p>
+    <p>The row that most often gets under-weighted at <em>operating</em> time is blast radius. An in-tenant connector fails one member at a time and each failure is somebody's problem. A gateway is shared infrastructure, so its failures are correlated — which is why so much of a gateway design is durability and recovery rather than features.</p>
+  </div>
+</section>
+
+<section id="deciding">
+  <div class="wrap">
+    <p class="eyebrow">Deciding</p>
+    <h2>Working out which class your platform is</h2>
+    <p>Four questions, in this order. The first "no" usually settles it.</p>
+    <ol class="tight" style="counter-reset:none">
+      <li><strong>Can third-party code be installed and executed in a customer's instance?</strong> Managed packages, scoped apps, plugin assemblies. If yes, in-tenant is available.</li>
+      <li><strong>Does the platform host an agent-facing surface for third-party code?</strong> If the only way to show an agent anything is a page you serve and the platform frames in, you are at least partly gateway-shaped whatever else is true.</li>
+      <li><strong>Are there native outbound events?</strong> No webhooks means either something installed emits them, or you poll. Both are real answers; polling is not a failure.</li>
+      <li><strong>Where can durable state live?</strong> If the platform gives you no first-class object to hold case linkage, something you operate has to hold it — and that thing becomes precious.</li>
+    </ol>
+    <div class="note"><strong>Ask a fifth question of the member, not the platform:</strong> does their policy allow case content to transit infrastructure they do not operate? A "no" collapses the choice regardless of what the platform supports, and it is cheaper to hear at scoping than at security review.</div>
+    <h3>Where the shipped connectors landed</h3>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Platform</th><th>Class</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><a href="../connectors/salesforce.html">Salesforce</a></td><td>In-tenant</td><td>Apex is real server-side code running under the member's governance</td></tr>
+          <tr><td><a href="../connectors/dynamics.html">Dynamics</a></td><td>In-tenant</td><td>Plugin assembly plus Power Automate, all in the member's environment</td></tr>
+          <tr><td><a href="../connectors/zendesk.html">Zendesk</a></td><td>Partial</td><td>Sandboxed client app and hosted declarative flows, but no arbitrary server code</td></tr>
+          <tr><td><a href="../connectors/fin-intercom.html">Fin / Intercom</a></td><td>Gateway</td><td>No third-party code hosting and no native webhooks, so the service must be elsewhere</td></tr>
+          <tr><td><a href="../connectors/servicenow.html">ServiceNow</a></td><td>Undecided</td><td>Answers both ways: it runs installed code, but hosts no UI and has no native webhooks</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="middle">
+  <div class="wrap">
+    <p class="eyebrow">The awkward case</p>
+    <h2>When the platform answers "sort of"</h2>
+    <p>Two of the five platforms above do not answer cleanly, and they are instructive in different ways.</p>
+    <h3>Zendesk: yes to installation, no to a server</h3>
+    <p>Code installs and runs — but the app is a browser sandbox with no storage and no server, and the flow engine is declarative. So background work lives in a page that exists only while an agent has a tab open, and anything the flow language cannot express has nowhere to go. The class question resolves to "in-tenant, within limits", and the limits are the design.</p>
+    <h3>ServiceNow: yes to installation, no to hosting</h3>
+    <p>Installed scoped applications are the native extension model, so code can certainly run in the member's instance. But the platform hosts no UI surface for you and provides no native webhooks — so something must be installed <em>and</em> something must be served from elsewhere. The remaining decision is not "app or no app"; it is how much of the connector lives inside that app, and therefore how often members have to upgrade it.</p>
+    <div class="note">That reframing is the practical value of the taxonomy. When a platform answers ambiguously, the question stops being <em>which class is this</em> and becomes <em>what is the smallest thing that has to be installed</em> — because that is what determines the upgrade burden you are signing members up for. See the <a href="../connectors/servicenow.html">ServiceNow assessment</a> for that worked through in detail.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
