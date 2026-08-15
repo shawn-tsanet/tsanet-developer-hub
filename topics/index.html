@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topics — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  .topic{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;border-left:3px solid var(--orange);margin-bottom:16px;display:block}
+  .topic:hover{border-color:var(--blue);border-left-color:var(--orange)}
+  .topic h3{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.015em;margin:0 0 8px}
+  .topic > p{font-size:14.5px;color:var(--slate);max-width:76ch;margin-bottom:14px}
+  .topic .grounds{display:flex;flex-wrap:wrap;gap:8px}
+  .topic .grounds span{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);background:var(--paper);border-radius:7px;padding:5px 11px;color:var(--slate)}
+  .topic .more{font-family:var(--mono);font-size:12.5px;color:var(--blue);margin-top:14px;display:block}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../connectors/index.html">Connectors</a>
+      <a href="../api/index.html">API</a>
+      <a href="../docs/index.html">Design Docs</a>
+      <a href="index.html" aria-current="page">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / Topics</div>
+    <h1>Topics</h1>
+    <p class="lede">Write-ups that cut across connectors rather than belonging to one. Each is grounded in what the shipped integrations actually do — which is also why there are only two of them.</p>
+    <div class="meta-row">
+      <span><b>Published</b> 2</span>
+      <span><b>Standard</b> Grounded in shipped work</span>
+    </div>
+    <div class="toc">
+      <a href="#published">Published</a>
+      <a href="#notyet">Not written yet</a>
+      <a href="#propose">Propose one</a>
+    </div>
+  </div>
+</header>
+
+<section id="published">
+  <div class="wrap">
+    <p class="eyebrow">Published</p>
+    <h2>Two topics</h2>
+
+    <a class="topic" href="connector-classes.html">
+      <h3>Two ways to build a connector</h3>
+      <p>One question about your platform — will it run your code inside the member's tenant? — decides who operates the integration, where credentials live, whether one failure is everyone's failure, and whether shipping a fix means asking every member to upgrade. The taxonomy behind every connector on this hub, plus a four-question procedure for a platform that is not on it yet.</p>
+      <div class="grounds">
+        <span>In-tenant · Salesforce, Dynamics</span>
+        <span>Partial · Zendesk</span>
+        <span>Gateway · Fin / Intercom</span>
+        <span>Undecided · ServiceNow</span>
+      </div>
+      <span class="more">Read the topic →</span>
+    </a>
+
+    <a class="topic" href="entitlement-automation.html">
+      <h3>Deciding what to accept automatically</h3>
+      <p>Every shipped connector can accept inbound cases without an agent, and they disagree completely about when that is wise. Accepting stops the SLA clock and tells a partner an engineer is engaged — so a false acceptance is worse for them than an honest breach. Four shipping postures, and how to build a rule that asserts something actually true.</p>
+      <div class="grounds">
+        <span>Accept everything · Zendesk</span>
+        <span>Match existing work · Dynamics</span>
+        <span>Verify entitlement · Salesforce</span>
+        <span>Human commits · Fin / Intercom</span>
+      </div>
+      <span class="more">Read the topic →</span>
+    </a>
+  </div>
+</section>
+
+<section id="notyet">
+  <div class="wrap">
+    <p class="eyebrow">Not written yet</p>
+    <h2>What is on the list, and why it is not here</h2>
+    <p>These appear as headings elsewhere on the hub. They are not written because nothing has been assessed behind them, and a topic page that summarises nothing would be worse than an empty slot.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Candidate</th><th>What is missing</th></tr></thead>
+        <tbody>
+          <tr><td>AI-native support platforms<br><span class="mono" style="font-size:12px;color:var(--mute)">Pylon · DevRev · Wolken · Agentforce · Zendesk AI · Now Assist</span></td><td>No platform assessment exists for any of them. <a href="../connectors/fin-intercom.html">Fin / Intercom</a> is the only one that has been probed, and it has a connector page rather than a topic.</td></tr>
+          <tr><td>Email-to-case patterns</td><td>No connector implements one, so there is nothing to compare.</td></tr>
+          <tr><td>Swarming &amp; case ownership</td><td>Ownership changes propagate on two connectors, but nothing has been written down about how teams actually use it.</td></tr>
+          <tr><td>SLA &amp; escalation design</td><td>Partly covered already — the acknowledgment-only SLA and the <code>responded</code> flag are in <a href="../api/index.html#cases">the API guidance</a> and the <a href="entitlement-automation.html">acceptance topic</a>. A standalone page needs more than that.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">The bar for this section is that a topic compares <em>things that exist</em>. Both published topics clear it because four or five connectors independently solved the same problem differently — that contrast is the content. Industry commentary without that grounding belongs somewhere else.</div>
+  </div>
+</section>
+
+<section id="propose">
+  <div class="wrap">
+    <p class="eyebrow">Contributing</p>
+    <h2>Propose a topic</h2>
+    <p>The most useful proposals come from someone who has hit the same problem on two platforms and found the answers differ. If you have run into that, it is very likely worth a page — and you already have most of the material.</p>
+    <div class="grid g3">
+      <a class="card" href="../index.html#community">
+        <span class="chip">Community</span>
+        <h3>Start a discussion</h3>
+        <p>Ideas and Wish List are the categories for this. Say what you hit, on which platforms, and how the answers differed.</p>
+        <span class="card-foot">Community →</span>
+      </a>
+      <a class="card" href="../docs/index.html">
+        <span class="chip">Adjacent</span>
+        <h3>Or write a design doc</h3>
+        <p>If the subject is platform-wide behaviour with a specification behind it rather than a comparison, it belongs in the numbered library instead.</p>
+        <span class="card-foot">Design docs →</span>
+      </a>
+      <a class="card" href="../connectors/index.html">
+        <span class="chip">Source</span>
+        <h3>Compare the connectors</h3>
+        <p>The comparison matrix is where most topic ideas start — a row where the connectors disagree is usually a topic waiting to be written.</p>
+        <span class="card-foot">All connectors →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
