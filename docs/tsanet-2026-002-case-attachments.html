@@ -8,69 +8,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --paper:#F4F8FA; --panel:#FFFFFF; --ink:#093D56; --slate:#41637A;
-    --line:#D7E4EB; --blue:#005B82; --cyan:#337C9B; --deep:#00476B;
-    --orange:#CC4E0B; --green:#1F9D6B;
-    --mono:'JetBrains Mono',monospace; --body:'Instrument Sans',sans-serif; --disp:'Bricolage Grotesque',sans-serif;
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
-  a{color:var(--blue)}
-  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
-
-  nav{position:sticky;top:0;z-index:50;background:var(--blue);border-bottom:2px solid var(--orange)}
-  .nav-in{display:flex;align-items:center;gap:12px;height:56px}
-  .nav-in img{width:26px;height:26px;border-radius:6px}
-  .nav-in a{color:#fff;text-decoration:none;font-family:var(--disp);font-weight:700;font-size:15px}
-  .nav-in .crumb{color:#BFD9E5;font-family:var(--mono);font-size:12px;margin-left:auto}
-
-  header{padding:52px 0 36px;border-bottom:1px solid var(--line);background:
-    radial-gradient(760px 300px at 90% -70px, rgba(51,124,155,.14), transparent 65%)}
-  .doc-meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-  .chip{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.05em;border-radius:5px;padding:3px 9px}
-  .chip.no{color:var(--blue);background:rgba(0,91,130,.06);border:1px solid rgba(0,91,130,.18)}
-  .chip.status{color:var(--orange);background:rgba(204,78,11,.08);border:1px solid rgba(204,78,11,.3)}
-  .chip.status.approved{color:var(--green);background:rgba(31,157,107,.08);border-color:rgba(31,157,107,.25)}
-  h1{font-family:var(--disp);font-weight:800;font-size:clamp(28px,4vw,40px);line-height:1.12;letter-spacing:-.02em;margin-bottom:14px}
-  .abstract{font-size:17px;color:var(--slate);max-width:64ch}
-  .meta-table{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .meta-cell{background:var(--panel);padding:10px 14px}
-  .meta-cell b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:2px}
-  .meta-cell span{font-size:14px}
-
-  main{padding:44px 0 24px}
-  main h2{font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:-.01em;margin:38px 0 12px;padding-top:8px}
-  main h2:first-child{margin-top:0}
-  main h2 .sec-no{font-family:var(--mono);font-size:13px;color:var(--orange);font-weight:600;margin-right:10px}
-  main h3{font-family:var(--disp);font-weight:700;font-size:17px;margin:26px 0 8px}
-  main p{margin-bottom:14px;max-width:72ch}
-  main ul,main ol{margin:0 0 14px 22px;max-width:70ch}
-  main li{margin-bottom:6px}
-
-  pre{background:#0B3349;color:#DCEAF2;font-family:var(--mono);font-size:13px;line-height:1.6;border-radius:10px;padding:18px 20px;overflow-x:auto;margin:0 0 18px;border-left:3px solid var(--orange)}
-  code{font-family:var(--mono);font-size:.92em}
-  p code,li code{background:rgba(0,91,130,.07);border:1px solid rgba(0,91,130,.14);border-radius:4px;padding:1px 5px;color:var(--deep)}
-
-  .callout{border:1px solid var(--line);border-left:3px solid var(--blue);background:var(--panel);border-radius:8px;padding:14px 18px;margin:0 0 18px;font-size:14.5px}
-  .callout.warn{border-left-color:var(--orange)}
-  .callout b{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px;color:var(--cyan)}
-  .callout.warn b{color:var(--orange)}
-
-  table.doc{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  table.doc th{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;text-align:left;color:var(--cyan);background:rgba(0,91,130,.05);padding:9px 14px;border-bottom:1px solid var(--line)}
-  table.doc td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
-  table.doc tr:last-child td{border-bottom:none}
-
-  .figure{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;margin:0 0 18px;text-align:center}
-  .figure figcaption{font-family:var(--mono);font-size:12px;color:var(--slate);margin-top:12px}
-
-  footer{margin-top:40px;padding:30px 0 44px;background:var(--blue);border-top:2px solid var(--orange);color:#BFD9E5;font-size:13px}
-  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-  footer .mono{font-family:var(--mono);font-size:12px;color:#9CC3D5}
-  footer a{color:#fff}
-</style>
+<!-- hub.css owns the brand tokens, fonts and SVG diagram primitives.
+     doc.css adds only what is specific to a numbered design document. -->
+<link rel="stylesheet" href="../assets/hub.css">
+<link rel="stylesheet" href="../assets/doc.css">
 </head>
 <body>
 
@@ -148,30 +89,30 @@
 
     <div class="figure">
       <svg viewBox="0 0 640 200" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A forward from the sending connector reaches the Connect API, which delivers the file to both the receiver's and the submitter's registered endpoints; the platform stores nothing and creates no case note.">
-        <rect x="16" y="74" width="150" height="52" rx="8" fill="#FFFFFF" stroke="#D7E4EB" stroke-width="1.5"/>
-        <text x="91" y="98" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11.5" font-weight="600" fill="#093D56">Your connector</text>
-        <text x="91" y="115" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="10.5" fill="#41637A">forward: files + description</text>
+        <rect x="16" y="74" width="150" height="52" rx="8" class="bx"/>
+        <text x="91" y="98" text-anchor="middle" class="tt">Your connector</text>
+        <text x="91" y="115" text-anchor="middle" class="ts">forward: files + description</text>
 
-        <path d="M166,100 H222" stroke="#41637A" stroke-width="1.5" fill="none"/>
-        <path d="M214,95 L224,100 L214,105 Z" fill="#41637A"/>
+        <path d="M166,100 H222" class="ln"/>
+        <path d="M214,95 L224,100 L214,105 Z" fill="var(--slate)"/>
 
-        <rect x="228" y="66" width="170" height="68" rx="8" fill="rgba(0,91,130,.07)" stroke="#005B82" stroke-width="1.5"/>
-        <text x="313" y="90" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11.5" font-weight="600" fill="#093D56">Connect API</text>
-        <text x="313" y="107" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="10.5" fill="#41637A">stores nothing</text>
-        <text x="313" y="123" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="10.5" fill="#41637A">writes no case note</text>
+        <rect x="228" y="66" width="170" height="68" rx="8" class="bx-acc"/>
+        <text x="313" y="90" text-anchor="middle" class="tt">Connect API</text>
+        <text x="313" y="107" text-anchor="middle" class="ts">stores nothing</text>
+        <text x="313" y="123" text-anchor="middle" class="ts">writes no case note</text>
 
-        <path d="M398,86 C440,74 452,44 492,38" stroke="#41637A" stroke-width="1.5" fill="none"/>
-        <path d="M484,34 L494,38 L485,44 Z" fill="#41637A"/>
-        <path d="M398,114 C440,126 452,156 492,162" stroke="#41637A" stroke-width="1.5" fill="none"/>
-        <path d="M484,158 L494,162 L485,168 Z" fill="#41637A"/>
+        <path d="M398,86 C440,74 452,44 492,38" class="ln"/>
+        <path d="M484,34 L494,38 L485,44 Z" fill="var(--slate)"/>
+        <path d="M398,114 C440,126 452,156 492,162" class="ln"/>
+        <path d="M484,158 L494,162 L485,168 Z" fill="var(--slate)"/>
 
-        <rect x="498" y="14" width="126" height="50" rx="8" fill="rgba(31,157,107,.08)" stroke="#1F9D6B" stroke-width="1.5"/>
-        <text x="561" y="35" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="10.5" fill="#093D56">Partner's endpoint</text>
-        <text x="561" y="51" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#1F9D6B">receiverStatus</text>
+        <rect x="498" y="14" width="126" height="50" rx="8" class="bx-grn"/>
+        <text x="561" y="35" text-anchor="middle" class="ts">Partner's endpoint</text>
+        <text x="561" y="51" text-anchor="middle" class="tl" style="fill:var(--green)">receiverStatus</text>
 
-        <rect x="498" y="138" width="126" height="50" rx="8" fill="#FFFFFF" stroke="#CC4E0B" stroke-width="1.5"/>
-        <text x="561" y="159" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="10.5" fill="#093D56">Your own endpoint</text>
-        <text x="561" y="175" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#CC4E0B">CONFIG_MISSING?</text>
+        <rect x="498" y="138" width="126" height="50" rx="8" class="bx" style="stroke:var(--orange)"/>
+        <text x="561" y="159" text-anchor="middle" class="ts">Your own endpoint</text>
+        <text x="561" y="175" text-anchor="middle" class="tl" style="fill:var(--orange)">CONFIG_MISSING?</text>
       </svg>
       <figcaption>Figure 1 — One forward, two deliveries. If your own receive endpoint is unregistered, the lower path reports <code>CONFIG_MISSING</code> and you keep no copy of what you sent.</figcaption>
     </div>

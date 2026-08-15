@@ -7,70 +7,12 @@
 <link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --paper:#F4F8FA; --panel:#FFFFFF; --ink:#093D56; --slate:#41637A;
-    --line:#D7E4EB; --blue:#005B82; --cyan:#337C9B; --deep:#00476B;
-    --orange:#CC4E0B; --green:#1F9D6B;
-    --mono:'JetBrains Mono',monospace; --body:'Instrument Sans',sans-serif; --disp:'Bricolage Grotesque',sans-serif;
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
-  a{color:var(--blue)}
-  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
-
-  nav{position:sticky;top:0;z-index:50;background:var(--blue);border-bottom:2px solid var(--orange)}
-  .nav-in{display:flex;align-items:center;gap:12px;height:56px}
-  .nav-in img{width:26px;height:26px;border-radius:6px}
-  .nav-in a{color:#fff;text-decoration:none;font-family:var(--disp);font-weight:700;font-size:15px}
-  .nav-in .crumb{color:#BFD9E5;font-family:var(--mono);font-size:12px;margin-left:auto}
-
-  header{padding:52px 0 36px;border-bottom:1px solid var(--line);background:
-    radial-gradient(760px 300px at 90% -70px, rgba(51,124,155,.14), transparent 65%)}
-  .doc-meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-  .chip{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.05em;border-radius:5px;padding:3px 9px}
-  .chip.no{color:var(--blue);background:rgba(0,91,130,.06);border:1px solid rgba(0,91,130,.18)}
-  .chip.status{color:var(--orange);background:rgba(204,78,11,.08);border:1px solid rgba(204,78,11,.3)}
-  .chip.status.approved{color:var(--green);background:rgba(31,157,107,.08);border-color:rgba(31,157,107,.25)}
-  h1{font-family:var(--disp);font-weight:800;font-size:clamp(28px,4vw,40px);line-height:1.12;letter-spacing:-.02em;margin-bottom:14px}
-  .abstract{font-size:17px;color:var(--slate);max-width:64ch}
-  .meta-table{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .meta-cell{background:var(--panel);padding:10px 14px}
-  .meta-cell b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:2px}
-  .meta-cell span{font-size:14px}
-
-  main{padding:44px 0 24px}
-  main h2{font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:-.01em;margin:38px 0 12px;padding-top:8px}
-  main h2:first-child{margin-top:0}
-  main h2 .sec-no{font-family:var(--mono);font-size:13px;color:var(--orange);font-weight:600;margin-right:10px}
-  main h3{font-family:var(--disp);font-weight:700;font-size:17px;margin:26px 0 8px}
-  main p{margin-bottom:14px;max-width:72ch}
-  main ul,main ol{margin:0 0 14px 22px;max-width:70ch}
-  main li{margin-bottom:6px}
-
-  pre{background:#0B3349;color:#DCEAF2;font-family:var(--mono);font-size:13px;line-height:1.6;border-radius:10px;padding:18px 20px;overflow-x:auto;margin:0 0 18px;border-left:3px solid var(--orange)}
-  code{font-family:var(--mono);font-size:.92em}
-  p code,li code{background:rgba(0,91,130,.07);border:1px solid rgba(0,91,130,.14);border-radius:4px;padding:1px 5px;color:var(--deep)}
-
-  .callout{border:1px solid var(--line);border-left:3px solid var(--blue);background:var(--panel);border-radius:8px;padding:14px 18px;margin:0 0 18px;font-size:14.5px}
-  .callout.warn{border-left-color:var(--orange)}
-  .callout b{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px;color:var(--cyan)}
-  .callout.warn b{color:var(--orange)}
-
-  table.doc{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  table.doc th{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;text-align:left;color:var(--cyan);background:rgba(0,91,130,.05);padding:9px 14px;border-bottom:1px solid var(--line)}
-  table.doc td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
-  table.doc tr:last-child td{border-bottom:none}
-
-  .figure{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;margin:0 0 18px;text-align:center}
-  .figure figcaption{font-family:var(--mono);font-size:12px;color:var(--slate);margin-top:12px}
-
-  footer{margin-top:40px;padding:30px 0 44px;background:var(--blue);border-top:2px solid var(--orange);color:#BFD9E5;font-size:13px}
-  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-  footer .mono{font-family:var(--mono);font-size:12px;color:#9CC3D5}
-  footer a{color:#fff}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- hub.css owns the brand tokens, fonts and SVG diagram primitives.
+     doc.css adds only what is specific to a numbered design document.
+     Do not redefine colours locally: change them once in hub.css. -->
+<link rel="stylesheet" href="../assets/hub.css">
+<link rel="stylesheet" href="../assets/doc.css">
 </head>
 <body>
 
@@ -87,15 +29,16 @@
     <div class="doc-meta-row">
       <span class="chip no">TSANET-2026-XXX</span>
       <span class="chip status">DRAFT</span>
-      <!-- swap to: <span class="chip status approved">APPROVED</span> -->
+      <!-- swap to: <span class="chip status approved">APPROVED</span>
+           or:      <span class="chip status superseded">SUPERSEDED</span> -->
     </div>
     <h1>Document Title Goes Here</h1>
     <p class="abstract">One-paragraph abstract. State what this document specifies, who should read it, and what decision or implementation it supports. Keep it under four sentences.</p>
     <div class="meta-table">
-      <div class="meta-cell"><b>Author</b><span>Name, TSANet Connect Platform Engineering</span></div>
       <div class="meta-cell"><b>Date</b><span>2026-08-15</span></div>
       <div class="meta-cell"><b>Version</b><span>0.1</span></div>
       <div class="meta-cell"><b>Audience</b><span>Member integrators</span></div>
+      <div class="meta-cell"><b>Verified against</b><span>What you checked, not what you remember</span></div>
     </div>
   </div>
 </header>
@@ -104,52 +47,66 @@
   <div class="wrap">
 
     <h2><span class="sec-no">1</span>Background</h2>
-    <p>Context the reader needs before the substance. Reference related documents by number, for example TSANET-2026-014, and link them directly since every document in this library is a page.</p>
+    <p>Context the reader needs before the substance. Reference related documents by number — for example <a href="tsanet-2026-001-canonical-case-model.html">TSANET-2026-001</a> — and link them directly, since every document in this library is a page rather than a file.</p>
+
+    <div class="callout">
+      <b>Related</b>
+      Use this block for pointers out: the <a href="../api/index.html">API guidance</a>, a <a href="../index.html#connectors">connector page</a>, or another document. Cross-linking is what stops the library becoming a pile of PDFs with numbers on them.
+    </div>
 
     <h2><span class="sec-no">2</span>Specification</h2>
-    <p>The normative content. Use callouts for constraints that implementers commonly miss:</p>
+    <p>The normative content. Use callouts for the constraints implementers actually miss, rather than for emphasis in general — a page where everything is highlighted highlights nothing.</p>
 
     <div class="callout">
       <b>Note</b>
-      Always retrieve the process form fresh before submission. Cached forms cause 400 errors when required custom fields change.
+      Neutral context worth pulling out of the flow: a convention, a default, something easy to overlook but not dangerous.
     </div>
 
     <div class="callout warn">
       <b>Constraint</b>
-      Save the <code>token</code> from case creation. It is the primary key for every subsequent API operation on the case.
+      Something that will bite. State the behaviour, then the consequence: <em>save the <code>token</code> from case creation — it is the primary key for every later operation, and an integration that loses it has orphaned the case.</em>
     </div>
 
     <h3>2.1 Example request</h3>
     <pre>POST /v1/collaboration-requests
-Authorization: Bearer {jwt}
+Authorization: Bearer {token}
+Accept: application/json, application/problem+json
 Content-Type: application/json
 
 {
   "testSubmission": true,
   "priority": "MEDIUM",
-  "summary": "Example collaboration request"
+  "problemSummary": "Example collaboration request"
 }</pre>
 
     <h3>2.2 Parameter reference</h3>
     <table class="doc">
       <tr><th>Field</th><th>Required</th><th>Notes</th></tr>
-      <tr><td><code>testSubmission</code></td><td>No</td><td>Use <code>true</code> in development; suppresses SLA and partner notifications.</td></tr>
-      <tr><td><code>priority</code></td><td>Yes</td><td>HIGH (2h SLA), MEDIUM (4h), LOW (24h) on TSANet-hosted groups.</td></tr>
+      <tr><td><code>testSubmission</code></td><td>No</td><td>Use <code>true</code> in development; suppresses SLA timers and partner notifications. Note you write <code>testSubmission</code> and read <code>testCase</code>.</td></tr>
+      <tr><td><code>priority</code></td><td>Yes</td><td><code>LOW</code>, <code>MEDIUM</code> or <code>HIGH</code>. Members running four-level severity scales need a mapping in both directions.</td></tr>
     </table>
 
     <h2><span class="sec-no">3</span>Diagrams</h2>
+    <p>Inline SVG, using the shared primitives from <code>hub.css</code> — <code>.bx</code> and <code>.bx-ext</code> and <code>.bx-acc</code> and <code>.bx-grn</code> for boxes, <code>.ln</code> and <code>.lnA</code> for edges, <code>.tt</code> and <code>.ts</code> and <code>.tl</code> for text. Using the classes rather than literal colours keeps every figure on the hub consistent, and means a brand change lands everywhere at once.</p>
     <div class="figure">
-      <!-- Inline SVG or an embedded interactive component goes here -->
-      <svg viewBox="0 0 560 80" width="100%" height="80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder lifecycle diagram">
-        <line x1="40" y1="40" x2="520" y2="40" stroke="#D7E4EB" stroke-width="2"/>
-        <circle cx="60" cy="40" r="9" fill="#005B82"/><circle cx="215" cy="40" r="9" fill="#CC4E0B"/>
-        <circle cx="370" cy="40" r="9" fill="#1F9D6B"/><circle cx="500" cy="40" r="9" fill="#00476B"/>
-        <text x="60" y="68" font-family="monospace" font-size="10" fill="#41637A" text-anchor="middle">OPEN</text>
-        <text x="215" y="68" font-family="monospace" font-size="10" fill="#41637A" text-anchor="middle">INFORMATION</text>
-        <text x="370" y="68" font-family="monospace" font-size="10" fill="#41637A" text-anchor="middle">ACCEPTED</text>
-        <text x="500" y="68" font-family="monospace" font-size="10" fill="#41637A" text-anchor="middle">CLOSED</text>
+      <svg viewBox="0 0 620 130" role="img" aria-label="Template diagram: two boxes connected by a labelled edge, drawn with the shared primitives.">
+        <defs>
+          <marker id="tplArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/>
+          </marker>
+        </defs>
+        <rect class="bx" x="20" y="34" width="200" height="62" rx="8"/>
+        <text class="tt" x="120" y="60" text-anchor="middle">Your integration</text>
+        <text class="ts" x="120" y="80" text-anchor="middle">what it does</text>
+
+        <path class="ln" d="M220,65 H392" marker-end="url(#tplArrow)"/>
+        <text class="tl" x="306" y="56" text-anchor="middle">what crosses the boundary</text>
+
+        <rect class="bx-acc" x="398" y="34" width="200" height="62" rx="8"/>
+        <text class="tt" x="498" y="60" text-anchor="middle">Connect API</text>
+        <text class="ts" x="498" y="80" text-anchor="middle">what it returns</text>
       </svg>
-      <figcaption>Figure 1 — Replace with the document's actual diagram (inline SVG keeps it crisp and versionable).</figcaption>
+      <figcaption>Figure 1 — Replace with the document's real diagram. Give every figure a caption that says what the reader should take from it, not what it depicts.</figcaption>
     </div>
 
     <h2><span class="sec-no">4</span>Revision history</h2>
