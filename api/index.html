@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Working with the Connect API — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink);margin:16px 0}
+  pre code{background:none;padding:0;font-size:inherit}
+  .c{color:var(--mute)}
+  .k{color:var(--blue);font-weight:600}
+  .bad-v{color:var(--red);font-weight:600}
+  .good-v{color:var(--green);font-weight:600}
+  .status-band{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:22px 26px;margin-top:24px}
+  .status-band h3{margin:0 0 10px;font-size:19px}
+  .status-band p{max-width:78ch}
+  .out{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  .out a{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:8px 14px;color:var(--slate);transition:border-color .15s,color .15s}
+  .out a:hover{border-color:var(--blue);color:var(--blue)}
+  .gotcha{border-left:3px solid var(--orange);padding-left:16px;margin:18px 0}
+  .gotcha h4{font-family:var(--disp);font-size:16px;font-weight:700;margin:0 0 5px;letter-spacing:-.01em}
+  .gotcha p{margin:0 0 6px;font-size:14px}
+  .gotcha .where{font-family:var(--mono);font-size:11.5px;color:var(--mute)}
+  .gotcha .where a{color:var(--blue)}
+  .gotcha .where a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../index.html#connectors">Connectors</a>
+      <a href="../index.html#api" aria-current="page">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / API</div>
+    <h1>Working with the Connect API</h1>
+    <p class="lede">Not an endpoint reference — that already exists and is generated from the specification. This is the layer underneath: the behaviours that cost other integrators real time, gathered from building five connectors against this API.</p>
+    <div class="meta-row">
+      <span><b>Base</b> /v1 and /v2</span>
+      <span><b>Auth</b> OAuth 2.0 client credentials</span>
+      <span><b>Prod</b> connect2.tsanet.org</span>
+      <span><b>Beta</b> connect2.tsanet.net</span>
+    </div>
+    <div class="toc">
+      <a href="#errors">Error modes</a>
+      <a href="#auth">Authentication</a>
+      <a href="#partners">Partners &amp; forms</a>
+      <a href="#cases">Collaboration requests</a>
+      <a href="#content">Notes &amp; attachments</a>
+      <a href="#webhooks">Webhooks</a>
+      <a href="#versions">Deprecation clocks</a>
+    </div>
+  </div>
+</header>
+
+<section id="reference">
+  <div class="wrap">
+    <div class="status-band">
+      <h3>Looking for the endpoint reference?</h3>
+      <p>Full request and response schemas, parameters and status codes for all 27 paths are published in the GitBook API Reference and generated from the specification, so it stays in step with the API. This page deliberately does not duplicate it — two copies of a reference is one copy that goes stale.</p>
+      <div class="out">
+        <a href="https://tsanet.gitbook.io/connect/api-reference">API Reference →</a>
+        <a href="https://tsanet.gitbook.io/connect/api-reference/integration-guide">Integration guide →</a>
+        <a href="https://tsanet.gitbook.io/connect/api-reference/models">Models →</a>
+        <a href="https://tsanet.gitbook.io/connect/api-reference/postman-collection">Postman collection →</a>
+        <a href="../connectors/connect-sdk.html">Java client →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="errors">
+  <div class="wrap">
+    <p class="eyebrow">Error modes</p>
+    <h2>The one header that changes how every failure reaches you</h2>
+    <p>If you read nothing else here, read this. By default, most business-rule, validation and authorization rejections come back as <strong>HTTP 500</strong> with a <code>{"message": "..."}</code> body. Not 400, not 422 — 500. An integration written against the defaults cannot distinguish "you sent a bad email domain" from "the platform is broken", and will retry things it should not.</p>
+    <p>This is deliberate and permanent, locked in for backward compatibility with clients built before the alternative existed. The fix is one header:</p>
+    <pre><code>Accept: application/json, application/problem+json</code></pre>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 250" style="min-width:880px" role="img" aria-label="The same rejected request returns HTTP 500 with a message body under the default Accept header, and its documented status code with an RFC 7807 problem body when the client opts into application/problem+json.">
+          <defs><marker id="erA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--slate)"/></marker></defs>
+
+          <rect class="bx" x="20" y="96" width="215" height="62" rx="8"/>
+          <text class="tt" x="34" y="121">GET /collaboration-</text>
+          <text class="tt" x="34" y="139">requests/{unknown}</text>
+
+          <path class="ln" d="M235,113 C280,100 300,66 344,58" marker-end="url(#erA)"/>
+          <text class="tl" x="252" y="80">default Accept</text>
+          <path class="ln" d="M235,141 C280,154 300,190 344,198" marker-end="url(#erA)"/>
+          <text class="tl" x="248" y="188">problem+json</text>
+
+          <rect class="bx" x="350" y="22" width="290" height="76" rx="8" style="stroke:var(--red)"/>
+          <text class="tt" x="366" y="46" style="fill:var(--red)">500 Internal Server Error</text>
+          <text class="ts" x="366" y="66">{"message": "Case with token</text>
+          <text class="ts" x="366" y="84">  ... not found."}</text>
+
+          <rect class="bx-grn" x="350" y="162" width="290" height="76" rx="8"/>
+          <text class="tt" x="366" y="186" style="fill:var(--green)">404 Not Found</text>
+          <text class="ts" x="366" y="206">{type, title, status,</text>
+          <text class="ts" x="366" y="224">  detail, instance}</text>
+
+          <path class="ln" d="M640,60 H700" marker-end="url(#erA)"/>
+          <path class="ln" d="M640,200 H700" marker-end="url(#erA)"/>
+
+          <rect class="bx" x="706" y="22" width="274" height="76" rx="8"/>
+          <text class="ts" x="720" y="46">Indistinguishable from a</text>
+          <text class="ts" x="720" y="64">real outage. Retries make</text>
+          <text class="ts" x="720" y="82">it worse.</text>
+
+          <rect class="bx" x="706" y="162" width="274" height="76" rx="8"/>
+          <text class="ts" x="720" y="186">Branch on status. Render</text>
+          <text class="ts" x="720" y="204">detail next to the field</text>
+          <text class="ts" x="720" y="222">that fixes it.</text>
+        </svg>
+      </div>
+      <figcaption>Same request, same rejection, two different worlds. With the header you get the documented status code (400 / 401 / 403 / 404 / 409 / 422) and an RFC 7807 body — read the message from <code>detail</code>, falling back to <code>title</code>.</figcaption>
+    </figure>
+    <div class="note"><strong>List <code>application/json</code> first.</strong> With <code>application/problem+json</code> alone, successful 200 responses also come back labelled <code>Content-Type: application/problem+json</code>, which breaks consumers that switch on content type.</div>
+  </div>
+</section>
+
+<section id="auth">
+  <div class="wrap">
+    <p class="eyebrow">Authentication</p>
+    <h2>Two schemes, one of them legacy</h2>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Scheme</th><th>Lifetime</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>OAuth 2.0 client credentials</td><td>~60 min, re-minted automatically</td><td>The current server-to-server path. No static token to refresh, because the caller re-mints from a long-lived credential.</td></tr>
+          <tr><td><code>POST /v1/login</code></td><td>~60 min JWT</td><td>Legacy. Something in your system has to hold and refresh the token, which is the problem the OAuth path removes.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="gotcha">
+      <h4>The scope that looks right and isn't</h4>
+      <p>Use the <strong>bare audience GUID</strong> plus <code>/.default</code>. The <code>api://</code> prefix fails with <code>AADSTS500011</code> because the app registration publishes no Application ID URI. This reads like a typo in the working version, and it is not.</p>
+      <p class="where">Worked through on <a href="../connectors/zendesk.html#auth">Zendesk → Authentication</a></p>
+    </div>
+    <div class="gotcha">
+      <h4>Provisioning is a prerequisite, not a formality</h4>
+      <p>An app-only token is accepted only once TSANet has provisioned your service principal's object ID — that provisioning is also what maps your tokens to your member company. Ask before you start building, not when auth fails.</p>
+    </div>
+    <div class="gotcha">
+      <h4>Store secrets verbatim</h4>
+      <p>Client secrets are random strings that can begin with punctuation. Trimming or "cleaning" the value breaks authentication with <code>AADSTS7000215</code>.</p>
+    </div>
+    <p>Always call <code>GET /v1/me</code> during development to confirm which company your credentials actually resolve to. On a platform where every call is scoped to your member identity, that is the cheapest sanity check available.</p>
+  </div>
+</section>
+
+<section id="partners">
+  <div class="wrap">
+    <p class="eyebrow">Partners &amp; forms</p>
+    <h2>The process form is not static, and neither are its field types</h2>
+    <div class="gotcha">
+      <h4>Fetch the form fresh, every time</h4>
+      <p>Partners change their own forms. The <code>documentId</code> you must submit with a case comes from that fetch, so a cached form means a stale <code>documentId</code> and a rejected submission. Cache it for the duration of one submission flow, never longer.</p>
+    </div>
+    <div class="gotcha">
+      <h4>SELECT options are newline-delimited</h4>
+      <p>The <code>options</code> string on a custom field separates choices with CRLF, not commas, and the structured <code>selections[]</code> array is frequently empty. Splitting on commas collapses every choice into one option — a bug that renders perfectly and is wrong. Prefer <code>selections[].value</code>, fall back to splitting on newlines, then commas.</p>
+      <p class="where">Worked through on <a href="../connectors/zendesk.html#gotchas">Zendesk → Platform gotchas</a></p>
+    </div>
+    <div class="gotcha">
+      <h4><code>adminNote</code> is HTML to render, not to strip</h4>
+      <p>The form's "Partner instructions" field is authored HTML with links. Escaping shows raw tags; stripping loses the links. Sanitize against a tag allowlist and render it. This is the one field that is the exception to stripping HTML.</p>
+    </div>
+    <p>Search returns an array: a company with several departments returns several results. Use <code>departmentId</code> for precise routing when it is available, and remember that <code>/v1/partners/search</code> takes a natural-language <code>query</code> if plain matching is not enough.</p>
+  </div>
+</section>
+
+<section id="cases">
+  <div class="wrap">
+    <p class="eyebrow">Collaboration requests</p>
+    <h2>The lifecycle, and the four rules that catch people</h2>
+    <div class="gotcha">
+      <h4>Save the token immediately — it is the primary key</h4>
+      <p>A numeric <code>id</code> exists, but every path uses <code>token</code>. Persist it durably at the moment of creation, before anything else can fail. An integration that creates a case and then loses the token has orphaned it: the partner has a case nobody on your side can find.</p>
+    </div>
+    <div class="gotcha">
+      <h4>There is no idempotency key on create</h4>
+      <p>A second POST with the same <code>internalCaseNumber</code> creates a <em>second case</em>. Since a timeout or a 5xx leaves you unable to tell whether the first one landed, a naive retry is how partners receive duplicate requests. Treat ambiguous outcomes as ambiguous: park the flow, reconcile by lookup, and only then re-arm the retry.</p>
+      <p class="where">The full outcome taxonomy is on <a href="../connectors/fin-intercom.html#taxonomy">Fin / Intercom → Submit outcomes</a></p>
+    </div>
+    <div class="gotcha">
+      <h4><code>responded</code> gates the SLA, not the status name</h4>
+      <p>The SLA tracks the <em>initial acknowledgment</em> deadline only. Once <code>responded</code> is true, the platform stops tracking — so a countdown shown on an ACCEPTED case is a deadline nobody is measuring. Gate every SLA display and breach check on <code>responded === false</code>.</p>
+    </div>
+    <div class="gotcha">
+      <h4>Only the submitting company can close</h4>
+      <p>Calling <code>/closure</code> as the receiver returns an error. Show the action only on outbound cases. And note the asymmetry with acceptance: a case cannot be closed while still OPEN by <em>either</em> party, so every case that ends cleanly must pass through acceptance first.</p>
+      <p class="where">Probed and diagrammed on <a href="../connectors/fin-intercom.html#class">Fin / Intercom → lifecycle</a></p>
+    </div>
+    <h3>Statuses</h3>
+    <p>The enum is <code>OPEN</code>, <code>INFORMATION</code>, <code>ACCEPTED</code>, <code>REJECTED</code>, <code>CLOSED</code>, <code>PENDINGACTION</code> — plus <code>ALL</code> as a list filter. <code>PENDINGACTION</code> surfaces cases awaiting an action from your side; it is thinly documented, so treat an unrecognised value as unknown rather than guessing. A stale status is visibly wrong; a guessed one is invisibly wrong.</p>
+    <h3>Approval has an undocumented required field</h3>
+    <p><code>engineerEmail</code> is required on <code>/approval</code> and omitting it returns an unhelpful error. It must also be on your company's TSANet-registered domain — an individual agent's own address fails domain validation, so use the dedicated API user's address.</p>
+    <h3>Listing and polling</h3>
+    <ul class="tight">
+      <li><code>/v2/collaboration-requests</code> is paginated and returns <code>{content:[...]}</code>; <code>/v2/collaboration-requests/list</code> returns a plain array and supports <code>updatedAfter</code> and <code>createdAfter</code>.</li>
+      <li>Store the <code>updatedAt</code> of the last synced record and pass it as <code>updatedAfter</code> on the next poll. Overlap the window slightly rather than trusting exact boundaries.</li>
+      <li><strong>There is no <code>/v1/cases</code> endpoint.</strong> It is a common wrong guess that 404s.</li>
+      <li><code>testSubmission: true</code> submits without creating real SLA timers or partner notifications. Note the asymmetry: you <em>write</em> <code>testSubmission</code> and <em>read</em> <code>testCase</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="content">
+  <div class="wrap">
+    <p class="eyebrow">Notes &amp; attachments</p>
+    <h2>Two fields, rendered twice</h2>
+    <div class="gotcha">
+      <h4>Never copy <code>summary</code> into <code>description</code></h4>
+      <p><code>summary</code> is required and capped at 500 characters; <code>description</code> is optional and capped at 5,000. The web UI renders both as separate labelled sections, so posting identical values displays the text twice. It looks like a duplication bug and it is intentional rendering. Present two fields — Subject and Details — and send <code>description</code> only when it has content.</p>
+    </div>
+    <div class="gotcha">
+      <h4>Note content comes back as HTML</h4>
+      <p>Both <code>summary</code> and <code>description</code> return with markup. Strip to plain text before display in a non-HTML surface. The process form's <code>adminNote</code> is the exception — that one renders.</p>
+    </div>
+    <p>Attachments use an HTTPS push arrangement that only works once <strong>both sides</strong> have configured endpoints, which makes it a two-party setup step rather than something you can finish alone. The SDK ships a receiver module so you do not have to build the receiving end yourself.</p>
+    <p class="where" style="font-family:var(--mono);font-size:11.5px;color:var(--mute)">Note-visibility modelling across three audiences: <a href="../connectors/zendesk.html#notes" style="color:var(--blue)">Zendesk → Note visibility</a></p>
+  </div>
+</section>
+
+<section id="webhooks">
+  <div class="wrap">
+    <p class="eyebrow">Webhooks</p>
+    <h2>Two versions that both accept your subscription</h2>
+    <div class="note" style="border-left-color:var(--red)"><strong>This is the trap that fails silently.</strong> Both <code>/v1/webhooks</code> and <code>/v2/webhooks</code> accept a subscription. They deliver different event type strings — v1 sends bare names like <code>collaboration-request.created</code>, v2 sends CloudEvents with <code>org.tsanet.connect.</code> prefixes. A consumer written for one and subscribed to the other returns 200 to every delivery and does nothing at all, with no error anywhere to find.</div>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Version</th><th>Event type format</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>/v1/webhooks</code></td><td><code>collaboration-request.created</code></td><td><span class="pill warn">deprecated · sunset 2027-01-01</span></td></tr>
+          <tr><td><code>/v2/webhooks</code></td><td><code>org.tsanet.connect.collaboration-request.created</code></td><td><span class="pill ok">current · CloudEvents</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>The five event types</h3>
+    <pre><code>org.tsanet.connect.collaboration-request.created
+org.tsanet.connect.collaboration-request.closed
+org.tsanet.connect.collaboration-request.response.created
+org.tsanet.connect.collaboration-request.response.updated
+org.tsanet.connect.collaboration-request.note.created</code></pre>
+    <div class="gotcha">
+      <h4>Payloads are thin — the fetch is what establishes truth</h4>
+      <p>An event names a token and little else. Do not try to reconstruct state from the event body: acknowledge fast, then fetch the case and act on what you read. This also makes redelivery harmless, provided your writes are keyed on the token.</p>
+    </div>
+    <div class="gotcha">
+      <h4>Delivery is a single attempt</h4>
+      <p>There is no retry ladder behind you. Acknowledge with a 200 on every branch, including branches where you rejected the payload — a 4xx buys you nothing because nothing will retry it. Then run a reconciliation poll as the real safety net.</p>
+      <p class="where">Recovery design on <a href="../connectors/fin-intercom.html#recovery">Fin / Intercom → Recovery</a></p>
+    </div>
+    <p>Subscribe with <code>POST /v2/webhooks</code> carrying a <code>callbackUrl</code> and <code>callbackAuth</code>. Save the response <code>id</code> for later management and the <code>secret</code> immediately — the signing key is returned only at creation and cannot be read back.</p>
+  </div>
+</section>
+
+<section id="versions">
+  <div class="wrap">
+    <p class="eyebrow">Deprecation clocks</p>
+    <h2>What is on a timer</h2>
+    <p>Three paths carry <code>deprecated: true</code> and an explicit <code>x-sunset</code> in the specification. If you are starting now, start on the successors.</p>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Path</th><th>Sunset</th><th>Use instead</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /v1/collaboration-requests</code></td><td>2027-01-01</td><td><code>/v2/collaboration-requests</code> (paginated) or <code>/v2/collaboration-requests/list</code></td></tr>
+          <tr><td><code>GET /v1/webhooks</code></td><td>2027-01-01</td><td><code>/v2/webhooks</code></td></tr>
+          <tr><td><code>POST /v1/webhooks</code></td><td>2027-01-01</td><td><code>/v2/webhooks</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">One caveat worth knowing if you are reading connector source: some shipped integrations still subscribe on <code>/v1</code> deliberately, because their event handlers match the bare type strings. That is a migration in progress, not a recommendation — new work should be on v2.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>

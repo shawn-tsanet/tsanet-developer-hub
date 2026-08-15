@@ -212,17 +212,17 @@
     <div class="sec-head">
       <div>
         <h2>Build against the API</h2>
-        <p>Everything a member integration touches, in six families — plus the one header that changes how failures reach you.</p>
+        <p>The behaviours that cost integrators time, gathered from building five connectors. The endpoint reference lives in GitBook and is generated from the spec — this is the layer underneath it.</p>
       </div>
-      <a class="sec-link" href="connectors/connect-sdk.html">Java client →</a>
+      <a class="sec-link" href="api/index.html">Working with the API →</a>
     </div>
     <div class="grid g3">
-      <div class="card"><span class="chip">Auth</span><h3>Login &amp; identity</h3><p>OAuth 2.0 client credentials is the current server-to-server path; <code>POST /v1/login</code> for a ~60&nbsp;minute JWT is the legacy one. <code>GET /v1/me</code> gives company context.</p></div>
-      <div class="card"><span class="chip">Partners</span><h3>Discovery &amp; forms</h3><p>Search partners, then always fetch the process form fresh before submission — vendors change them, and <code>documentId</code> comes with it.</p></div>
-      <div class="card"><span class="chip">Cases</span><h3>Collaboration requests</h3><p>Create, list with <code>updatedAfter</code>, approve, reject, request and send information, close. Save the token — it keys every later call.</p></div>
-      <div class="card"><span class="chip">Content</span><h3>Notes &amp; attachments</h3><p>Bi-directional case notes with visibility control, and HTTPS push file transfer once both sides have configured endpoints.</p></div>
-      <div class="card"><span class="chip">Webhooks</span><h3>Event delivery</h3><p>Subscribe a callback with its own auth. Payloads are thin — the event names a token and the fetch is what establishes truth.</p></div>
-      <div class="card"><span class="chip">Errors</span><h3>Two response modes</h3><p>By default most rejections return HTTP 500. Send <code>Accept: application/json, application/problem+json</code> to get documented status codes and RFC 7807 bodies.</p></div>
+      <a class="card" href="api/index.html#errors"><span class="chip">Errors</span><h3>Two response modes</h3><p>By default most rejections return HTTP 500 — indistinguishable from an outage. One <code>Accept</code> header gets you documented status codes and RFC 7807 bodies.</p></a>
+      <a class="card" href="api/index.html#auth"><span class="chip">Auth</span><h3>Login &amp; identity</h3><p>OAuth 2.0 client credentials is the current server-to-server path; <code>POST /v1/login</code> is legacy. Watch the scope format — the obvious one fails.</p></a>
+      <a class="card" href="api/index.html#partners"><span class="chip">Partners</span><h3>Discovery &amp; forms</h3><p>Fetch the process form fresh every time, and parse its SELECT options on newlines rather than commas.</p></a>
+      <a class="card" href="api/index.html#cases"><span class="chip">Cases</span><h3>Collaboration requests</h3><p>Save the token immediately. There is no idempotency key on create, and <code>responded</code> — not the status name — is what gates the SLA.</p></a>
+      <a class="card" href="api/index.html#content"><span class="chip">Content</span><h3>Notes &amp; attachments</h3><p>Two note fields rendered as two sections, so never copy one into the other. Attachments need both sides configured.</p></a>
+      <a class="card" href="api/index.html#webhooks"><span class="chip">Webhooks</span><h3>Event delivery</h3><p>v1 and v2 both accept your subscription and deliver different type strings. Payloads are thin; delivery is a single attempt.</p></a>
     </div>
   </div>
 </section>
