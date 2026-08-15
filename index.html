@@ -71,8 +71,9 @@
   .topic-band>p{font-size:14px;color:var(--slate);max-width:70ch;margin-bottom:18px}
   .sys-row{display:flex;flex-wrap:wrap;gap:10px}
   .sys{font-family:var(--mono);font-size:12.5px;font-weight:500;border:1px solid var(--line);border-radius:8px;padding:7px 14px;background:var(--paper);transition:border-color .15s,color .15s}
-  .sys:hover{border-color:var(--blue);color:var(--blue)}
+  a.sys:hover{border-color:var(--blue);color:var(--blue)}
   .sys span{color:#8695AB;font-weight:400}
+  .sys.muted{color:var(--mute);border-style:dashed;cursor:default}
 
   /* ---- community ---- */
   .comm{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:start}
@@ -189,11 +190,11 @@
         <p>The first gateway-class connector: TSANet hosts and operates the adapter, because Intercom runs no member code in-workspace. Canvas Kit panel in the Help Desk.</p>
         <span class="card-foot">Architecture &amp; platform notes →</span>
       </a>
-      <a class="card" href="#">
+      <a class="card" href="connectors/connect-sdk.html">
         <span class="chip">Pattern</span>
         <h3>Custom API integration</h3>
-        <p>The translation microservice pattern: your platform events in, TSANet REST calls out, polling with updatedAfter cursors back.</p>
-        <span class="card-foot">Pylon · DevRev · proprietary CRMs</span>
+        <p>The translation microservice pattern: your platform's events in, Connect API calls out, and <code>updatedAfter</code> polling back. For any platform without a connector.</p>
+        <span class="card-foot">Start with the SDK →</span>
       </a>
       <a class="card" href="connectors/connect-sdk.html">
         <span class="chip beta">v0.1.0 · Java</span>
@@ -210,15 +211,17 @@
     <div class="sec-head">
       <div>
         <h2>Build against the API</h2>
-        <p>Everything a member integration touches, in five families of endpoints.</p>
+        <p>Everything a member integration touches, in six families — plus the one header that changes how failures reach you.</p>
       </div>
-      <a class="sec-link" href="#">Postman collection →</a>
+      <a class="sec-link" href="connectors/connect-sdk.html">Java client →</a>
     </div>
-    <div class="grid g4">
-      <a class="card" href="#"><span class="chip">Auth</span><h3>Login &amp; identity</h3><p>POST /v1/login for a JWT, GET /v1/me for company context. Tokens expire; refresh in your client.</p></a>
-      <a class="card" href="#"><span class="chip">Partners</span><h3>Discovery &amp; forms</h3><p>Search partners, then always fetch the process form fresh before submission. Required fields are enforced.</p></a>
-      <a class="card" href="#"><span class="chip">Cases</span><h3>Collaboration requests</h3><p>Create, list with updatedAfter, approve, reject, request information, close. Save the token — it keys everything.</p></a>
-      <a class="card" href="#"><span class="chip">Content</span><h3>Notes &amp; attachments</h3><p>Bi-directional case notes with visibility control, HTTPS push file transfer once both sides configure endpoints.</p></a>
+    <div class="grid g3">
+      <div class="card"><span class="chip">Auth</span><h3>Login &amp; identity</h3><p>OAuth 2.0 client credentials is the current server-to-server path; <code>POST /v1/login</code> for a ~60&nbsp;minute JWT is the legacy one. <code>GET /v1/me</code> gives company context.</p></div>
+      <div class="card"><span class="chip">Partners</span><h3>Discovery &amp; forms</h3><p>Search partners, then always fetch the process form fresh before submission — vendors change them, and <code>documentId</code> comes with it.</p></div>
+      <div class="card"><span class="chip">Cases</span><h3>Collaboration requests</h3><p>Create, list with <code>updatedAfter</code>, approve, reject, request and send information, close. Save the token — it keys every later call.</p></div>
+      <div class="card"><span class="chip">Content</span><h3>Notes &amp; attachments</h3><p>Bi-directional case notes with visibility control, and HTTPS push file transfer once both sides have configured endpoints.</p></div>
+      <div class="card"><span class="chip">Webhooks</span><h3>Event delivery</h3><p>Subscribe a callback with its own auth. Payloads are thin — the event names a token and the fetch is what establishes truth.</p></div>
+      <div class="card"><span class="chip">Errors</span><h3>Two response modes</h3><p>By default most rejections return HTTP 500. Send <code>Accept: application/json, application/problem+json</code> to get documented status codes and RFC 7807 bodies.</p></div>
     </div>
   </div>
 </section>
@@ -228,25 +231,25 @@
     <div class="sec-head">
       <div>
         <h2>Design document library</h2>
-        <p>Interactive, web-native engineering documents. Published straight from the repo — every new document is a page, not a PDF.</p>
+        <p>Interactive, web-native engineering documents. Published straight from the repo — every document is a page, not a PDF. The library is new; these are the first entries.</p>
       </div>
       <a class="sec-link" href="docs/tsanet-design-doc-template.html">Document template →</a>
     </div>
     <div class="grid g3">
-      <a class="card doc-card" href="#">
-        <div style="display:flex;justify-content:space-between"><span class="doc-no">TSANET-2026-014</span><span class="doc-kind">Architecture</span></div>
-        <h3>OAuth 2.0 &amp; multi-tenant credential management</h3>
-        <p>Customer-owned secrets, private_key_jwt as the enterprise path, and credential lifecycle across Camel and Spring Boot.</p>
+      <a class="card doc-card" href="connectors/fin-intercom.html">
+        <div style="display:flex;justify-content:space-between"><span class="doc-no">CONNECTOR</span><span class="doc-kind">Architecture</span></div>
+        <h3>Fin / Intercom: the gateway adapter class</h3>
+        <p>Why a hosted gateway rather than an installed app, the runtime as built, and the submit-outcome taxonomy that keeps ambiguity from becoming duplicate cases.</p>
       </a>
-      <a class="card doc-card" href="#">
-        <div style="display:flex;justify-content:space-between"><span class="doc-no">TSANET-2026-009</span><span class="doc-kind">Specification</span></div>
-        <h3>Case state machine &amp; lifecycle diagram</h3>
-        <p>Spec-faithful interactive diagram of case states, transitions, and SLA timers for connector implementers.</p>
+      <a class="card doc-card" href="connectors/zendesk.html">
+        <div style="display:flex;justify-content:space-between"><span class="doc-no">CONNECTOR</span><span class="doc-kind">Architecture</span></div>
+        <h3>Zendesk: two layers in your own tenant</h3>
+        <p>The ZAF sandbox constraints, ZIS integration naming, the three-audience note visibility model, and the API-token retirement clock.</p>
       </a>
-      <a class="card doc-card" href="#">
-        <div style="display:flex;justify-content:space-between"><span class="doc-no">TSANET-2026-017</span><span class="doc-kind">Assessment</span></div>
-        <h3>GitHub API behavior for connector CI</h3>
-        <p>Fine-grained PAT permission nuances, classic token fallback, and partial-outage detection patterns.</p>
+      <a class="card doc-card" href="connectors/servicenow.html">
+        <div style="display:flex;justify-content:space-between"><span class="doc-no">PLATFORM</span><span class="doc-kind">Assessment</span></div>
+        <h3>ServiceNow: what the platform forces</h3>
+        <p>A pre-implementation map with every claim tagged by evidence level — surfaces, Table API traps, and the distribution choice certification gates.</p>
       </a>
     </div>
   </div>
@@ -265,23 +268,25 @@
       <p>Evaluations, integration notes, and member experience with the new generation of AI-native support platforms — and how each connects to TSANet Connect for multi-vendor cases.</p>
       <div class="sys-row">
         <a class="sys" href="connectors/fin-intercom.html">Fin AI <span>· Intercom</span></a>
-        <a class="sys" href="#">Pylon</a>
-        <a class="sys" href="#">DevRev</a>
-        <a class="sys" href="#">Wolken</a>
-        <a class="sys" href="#">Agentforce <span>· Salesforce</span></a>
-        <a class="sys" href="#">Zendesk AI</a>
-        <a class="sys" href="#">Now Assist <span>· ServiceNow</span></a>
+        <span class="sys muted">Pylon</span>
+        <span class="sys muted">DevRev</span>
+        <span class="sys muted">Wolken</span>
+        <span class="sys muted">Agentforce <span>· Salesforce</span></span>
+        <span class="sys muted">Zendesk AI</span>
+        <span class="sys muted">Now Assist <span>· ServiceNow</span></span>
       </div>
+      <p style="font-size:13px;color:var(--mute);margin:14px 0 0">Fin&nbsp;/&nbsp;Intercom is written up. The rest are on the list, not yet assessed.</p>
     </div>
     <div class="topic-band">
       <h3>CRM &amp; ticketing, legacy to modern</h3>
       <p>Migration stories, coexistence patterns, and what changes for collaboration workflows when a member moves platforms.</p>
       <div class="sys-row">
-        <a class="sys" href="#">Email-to-case patterns</a>
-        <a class="sys" href="#">Swarming &amp; case ownership</a>
-        <a class="sys" href="#">Entitlement automation</a>
-        <a class="sys" href="#">SLA &amp; escalation design</a>
+        <span class="sys muted">Email-to-case patterns</span>
+        <span class="sys muted">Swarming &amp; case ownership</span>
+        <span class="sys muted">Entitlement automation</span>
+        <span class="sys muted">SLA &amp; escalation design</span>
       </div>
+      <p style="font-size:13px;color:var(--mute);margin:14px 0 0">Planned topic areas. Nothing published here yet.</p>
     </div>
   </div>
 </section>
@@ -291,19 +296,19 @@
     <div class="sec-head">
       <div>
         <h2>Community</h2>
-        <p>Discussion runs on GitHub Discussions in the tsanetgit org — no separate accounts, no separate platform. Threads surface here on the portal.</p>
+        <p>Discussion will run on GitHub Discussions in the tsanetgit org — no separate accounts, no separate platform.</p>
       </div>
       <a class="sec-link" href="https://github.com/orgs/tsanetgit/discussions">Open Discussions →</a>
     </div>
     <div class="comm">
       <div class="comm-list">
-        <a class="comm-item" href="#"><span class="comm-cat">Q&amp;A</span><span><b>Handling the INFORMATION status in a custom integration</b><small>Most integrations miss this transition — patterns that work</small></span></a>
-        <a class="comm-item" href="#"><span class="comm-cat">Show &amp; tell</span><span><b>DevRev ↔ TSANet Connect sync, end to end</b><small>Case lifecycle mapping with the translation microservice pattern</small></span></a>
-        <a class="comm-item" href="#"><span class="comm-cat">Ideas</span><span><b>Webhook delivery for case updates</b><small>Replacing updatedAfter polling for high-volume members</small></span></a>
-        <a class="comm-item" href="#"><span class="comm-cat">Q&amp;A</span><span><b>Fin AI triage in front of multi-vendor escalation</b><small>Where the AI hand-off should sit in the collaboration flow</small></span></a>
+        <a class="comm-item" href="https://github.com/orgs/tsanetgit/discussions"><span class="comm-cat">Q&amp;A</span><span><b>Ask an implementation question</b><small>Auth, process forms, lifecycle transitions, webhook delivery</small></span></a>
+        <a class="comm-item" href="https://github.com/orgs/tsanetgit/discussions"><span class="comm-cat">Show &amp; tell</span><span><b>Share what you built</b><small>Custom integrations, translation services, platform findings</small></span></a>
+        <a class="comm-item" href="https://github.com/orgs/tsanetgit/discussions"><span class="comm-cat">Ideas</span><span><b>Propose a change to the API</b><small>Gaps, papercuts, and behaviour that surprised you</small></span></a>
+        <a class="comm-item" href="mailto:membership@tsanet.org"><span class="comm-cat">Membership</span><span><b>Early access &amp; onboarding</b><small>Credentials, pilot instances, connector early-access programmes</small></span></a>
       </div>
       <div>
-        <p style="font-size:14.5px;color:var(--slate);margin-bottom:16px">Every design document and topic page on this portal can carry its own discussion thread, embedded in place. Answers live next to the content they answer.</p>
+        <p style="font-size:14.5px;color:var(--slate);margin-bottom:16px">No threads yet — this is a new space, and the categories above are where things will land. If you hit something on this portal that is wrong, missing, or surprised you in production, that is the most useful first post anyone could make.</p>
         <a class="btn btn-primary" href="https://github.com/orgs/tsanetgit/discussions">Start a discussion</a>
       </div>
     </div>

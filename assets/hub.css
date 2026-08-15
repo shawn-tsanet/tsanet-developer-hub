@@ -73,7 +73,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--wash);color:var(--
 @media(max-width:560px){.g2,.g3,.g4{grid-template-columns:1fr}}
 
 .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:22px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,transform .15s,box-shadow .15s}
-.card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 10px 24px rgba(13,27,42,.07)}
+a.card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 10px 24px rgba(13,27,42,.07)}
 .card:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .card h3{font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:-.01em;margin:0}
 .card p{font-size:13.5px;color:var(--slate);line-height:1.55;flex:1;margin:0}
