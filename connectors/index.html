@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connectors — TSANet Connect Developer Hub</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  /* the matrix is wide by nature; let it scroll and keep the row label pinned */
+  .matrix table{min-width:60rem}
+  .matrix th[scope="row"]{position:sticky;left:0;background:var(--panel);z-index:1;width:11rem;font-weight:600;color:var(--ink)}
+  .matrix thead th{white-space:nowrap}
+  .matrix td{font-size:13.5px}
+  .na{color:var(--mute)}
+  .route{display:grid;grid-template-columns:11rem 1fr;gap:0;border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden}
+  .route > div{padding:14px 18px;border-bottom:1px solid var(--line)}
+  .route > div:nth-last-child(-n+2){border-bottom:none}
+  .route .plat{font-family:var(--mono);font-size:13px;color:var(--deep);background:var(--wash)}
+  .route .act{font-size:14px;color:var(--slate)}
+  .route .act a{color:var(--blue);font-weight:600}
+  .route .act a:hover{text-decoration:underline}
+  @media(max-width:640px){.route{grid-template-columns:1fr}.route .plat{border-bottom:none;padding-bottom:2px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="../index.html"><img class="brand-img" src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet">TSANet&nbsp;<small>Developer Hub</small></a>
+    <div class="nav-links">
+      <a href="../connectors/index.html" aria-current="page">Connectors</a>
+      <a href="../api/index.html">API</a>
+      <a href="../index.html#docs">Design Docs</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../index.html#community">Community</a>
+    </div>
+  </div>
+</nav>
+
+<header class="pagehead">
+  <div class="wrap">
+    <div class="crumb"><a href="../index.html">Hub</a> / Connectors</div>
+    <h1>Connectors</h1>
+    <p class="lede">Five platforms, four of them shipping, and one deliberate gap. Start here to find your platform, see how the connectors actually differ, and work out what to do if yours is not on the list.</p>
+    <div class="meta-row">
+      <span><b>GA</b> Salesforce · Dynamics · Zendesk</span>
+      <span><b>Early access</b> Fin / Intercom</span>
+      <span><b>Not built</b> ServiceNow</span>
+    </div>
+    <div class="toc">
+      <a href="#find">Find your platform</a>
+      <a href="#matrix">How they differ</a>
+      <a href="#shared">What they all share</a>
+      <a href="#nothing">If yours is not listed</a>
+    </div>
+  </div>
+</header>
+
+<section id="find">
+  <div class="wrap">
+    <p class="eyebrow">Routing</p>
+    <h2>Find your platform</h2>
+    <div class="route">
+      <div class="plat">Salesforce</div>
+      <div class="act">A managed package installs into your org. <a href="salesforce.html">Architecture &amp; setup →</a></div>
+
+      <div class="plat">Microsoft Dynamics</div>
+      <div class="act">A managed Power Platform solution installs into your environment. <a href="dynamics.html">Architecture &amp; setup →</a></div>
+
+      <div class="plat">Zendesk</div>
+      <div class="act">A ZAF app plus a ZIS integration, both in your own tenant. <a href="zendesk.html">Architecture &amp; setup →</a></div>
+
+      <div class="plat">Fin / Intercom</div>
+      <div class="act">TSANet hosts and operates the adapter; you install almost nothing. <a href="fin-intercom.html">Architecture &amp; platform notes →</a></div>
+
+      <div class="plat">ServiceNow</div>
+      <div class="act">No connector yet — development committed for 2026. <a href="servicenow.html">Platform assessment →</a></div>
+
+      <div class="plat">Anything else</div>
+      <div class="act">Build against the API directly. <a href="#nothing">See below →</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="matrix">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Comparison</p>
+        <h2>How the connectors actually differ</h2>
+        <p>The differences that change how you design, operate and support an integration — not feature checkboxes.</p>
+      </div>
+      <a class="sec-link" href="../topics/connector-classes.html">Why the classes differ →</a>
+    </div>
+    <div class="twrap matrix">
+      <table>
+        <caption>ServiceNow columns are empty because nothing is built, not because the answers are unknown — the <a href="servicenow.html">assessment</a> covers what the platform forces either way.</caption>
+        <thead>
+          <tr>
+            <th scope="col">&nbsp;</th>
+            <th scope="col">Salesforce</th>
+            <th scope="col">Dynamics</th>
+            <th scope="col">Zendesk</th>
+            <th scope="col">Fin / Intercom</th>
+            <th scope="col">ServiceNow</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Class</th><td>In-tenant</td><td>In-tenant</td><td>Partial</td><td>Gateway</td><td class="na">Undecided</td></tr>
+          <tr><th scope="row">Status</th><td><span class="pill ok">GA</span></td><td><span class="pill ok">GA</span></td><td><span class="pill ok">GA</span></td><td><span class="pill warn">Early access</span></td><td><span class="pill bad">Not built</span></td></tr>
+          <tr><th scope="row">Operated by</th><td>You</td><td>You</td><td>You</td><td>TSANet</td><td class="na">—</td></tr>
+          <tr><th scope="row">Agent surface</th><td>LWC on the Case record page</td><td>HTML + JS web resources on the Case form</td><td>ZAF sidebar app</td><td>Canvas Kit panel in the Help Desk</td><td class="na">—</td></tr>
+          <tr><th scope="row">Where state lives</th><td>Custom objects</td><td>Dataverse tables</td><td>Ticket fields and tags</td><td>The gateway's own durable store</td><td class="na">—</td></tr>
+          <tr><th scope="row">Inbound delivery</th><td>Apex REST on a public Site</td><td>Registered webhook to Power Automate</td><td>ZIS generic inbound webhook</td><td>TSANet push to the adapter</td><td class="na">—</td></tr>
+          <tr><th scope="row">Reconciliation</th><td>Scheduled job, 15&nbsp;min default</td><td>Scheduled flow, 15&nbsp;min default</td><td>ZAF background poller, 60&nbsp;s</td><td>Reconciliation poller</td><td class="na">—</td></tr>
+          <tr><th scope="row">Extension point</th><td>Clonable Flow library</td><td>Case Mapping configuration table</td><td>Zendesk triggers and ZIS flows</td><td>Server-side, by TSANet</td><td class="na">—</td></tr>
+          <tr><th scope="row">Auto-accept</th><td>Asset-match flow, rejects on no match</td><td>Auto-routing by case number</td><td>One trigger, scoped by conditions</td><td>Deliberately manual</td><td class="na">—</td></tr>
+          <tr><th scope="row">Distribution</th><td>Managed package</td><td>Managed solution / AppSource</td><td>App upload + ZIS bundle</td><td>Nothing to install</td><td class="na">—</td></tr>
+          <tr><th scope="row">Shipping a fix</th><td>Members upgrade</td><td>Members upgrade</td><td>Members upgrade</td><td>Central, nothing to do</td><td class="na">—</td></tr>
+          <tr><th scope="row">If it breaks</th><td>One member</td><td>One member</td><td>One member</td><td><span style="color:var(--orange);font-weight:600">Every member on it</span></td><td class="na">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Two rows are worth pausing on. <strong>Reconciliation</strong> tells you what happens when a push is missed — and the Zendesk poller runs in a browser page, so it only catches up while an agent has a tab open. <strong>If it breaks</strong> is the row that most often gets under-weighted: an in-tenant connector fails one member at a time, while a gateway's failures are correlated across everyone on it. That is the trade the <a href="../topics/connector-classes.html">connector classes topic</a> works through.</p>
+  </div>
+</section>
+
+<section id="shared">
+  <div class="wrap">
+    <p class="eyebrow">Common ground</p>
+    <h2>What every connector does the same way</h2>
+    <p>However different they look, all of them converged on the same handful of behaviours — because the API's shape requires it. If you are building your own, these are the parts worth copying rather than rediscovering.</p>
+    <div class="grid g2">
+      <div class="card">
+        <span class="chip">Pattern</span>
+        <h3>The fetch is the truth</h3>
+        <p>Inbound events carry a token and little else, so every connector acknowledges fast and then fetches the case. None of them try to reconstruct state from the event body — which is also what makes redelivery harmless.</p>
+      </div>
+      <div class="card">
+        <span class="chip">Pattern</span>
+        <h3>The token is the primary key</h3>
+        <p>All of them persist the token at creation, before anything else can fail, and key every local record on it. An integration that loses the token has orphaned a case the partner can still see.</p>
+      </div>
+      <div class="card">
+        <span class="chip">Pattern</span>
+        <h3>Push, with a poll behind it</h3>
+        <p>Every one pairs event delivery with a scheduled sweep. Push is the fast path; the poll is what makes missed deliveries recoverable rather than permanent.</p>
+      </div>
+      <div class="card">
+        <span class="chip">Pattern</span>
+        <h3>Forms are fetched, never cached</h3>
+        <p>The partner's process form is retrieved fresh for every submission, because partners change them and the required <code>documentId</code> comes with the fetch.</p>
+      </div>
+    </div>
+    <div class="note" style="margin-top:18px">The behaviours above are described endpoint by endpoint in <a href="../api/index.html">Working with the Connect API</a>, and specified in <a href="../docs/tsanet-2026-001-canonical-case-model.html">TSANET-2026-001</a>.</div>
+  </div>
+</section>
+
+<section id="nothing">
+  <div class="wrap">
+    <p class="eyebrow">No connector for your platform</p>
+    <h2>Three routes, in order of effort</h2>
+    <div class="grid g3">
+      <a class="card" href="connect-sdk.html">
+        <span class="chip beta">v0.1.0 · Java</span>
+        <h3>Use the SDK</h3>
+        <p>A Java client over the Connect API with typed facades, validation and both auth modes. The shortest path on the JVM that is not hand-rolled HTTP.</p>
+        <span class="card-foot">Library reference →</span>
+      </a>
+      <a class="card" href="../api/index.html">
+        <span class="chip">Pattern</span>
+        <h3>Build against the API</h3>
+        <p>The translation-service pattern: your platform's events in, Connect API calls out, <code>updatedAfter</code> polling back. Read the behaviour guide before you design.</p>
+        <span class="card-foot">Working with the API →</span>
+      </a>
+      <a class="card" href="../index.html#community">
+        <span class="chip">Wish list</span>
+        <h3>Tell us the platform</h3>
+        <p>Which platform your team runs on is the single most useful thing you can say to us — it is what decides which connector gets built next.</p>
+        <span class="card-foot">Community →</span>
+      </a>
+    </div>
+    <div class="note" style="margin-top:20px"><strong>Before you start, settle one question:</strong> will your platform run your code inside your own tenant? It decides who operates the integration, where credentials live, and whether one failure is everyone's failure — and it is a property of the platform, not a choice you get to make. The <a href="../topics/connector-classes.html">connector classes topic</a> has the four-question procedure for working it out.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><img src="../assets/TSANet-icon_white_blue_512px.png" alt="TSANet" style="width:36px;height:36px;border-radius:9px;display:block;margin-bottom:12px">TSANet · a not-for-profit member organization<br><span class="mono">developer.tsanet.org</span></div>
+    <div class="mono">connect.tsanet.org · connect2.tsanet.org · github.com/tsanetgit</div>
+  </div>
+</footer>
+
+</body>
+</html>
