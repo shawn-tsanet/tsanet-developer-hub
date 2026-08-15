@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSANET-2026-001 · The canonical case model</title>
+<link rel="icon" href="../assets/TSANet-icon_white_blue_512px.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F8FA; --panel:#FFFFFF; --ink:#093D56; --slate:#41637A;
+    --line:#D7E4EB; --blue:#005B82; --cyan:#337C9B; --deep:#00476B;
+    --orange:#CC4E0B; --green:#1F9D6B;
+    --mono:'JetBrains Mono',monospace; --body:'Instrument Sans',sans-serif; --disp:'Bricolage Grotesque',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  a{color:var(--blue)}
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+
+  nav{position:sticky;top:0;z-index:50;background:var(--blue);border-bottom:2px solid var(--orange)}
+  .nav-in{display:flex;align-items:center;gap:12px;height:56px}
+  .nav-in img{width:26px;height:26px;border-radius:6px}
+  .nav-in a{color:#fff;text-decoration:none;font-family:var(--disp);font-weight:700;font-size:15px}
+  .nav-in .crumb{color:#BFD9E5;font-family:var(--mono);font-size:12px;margin-left:auto}
+
+  header{padding:52px 0 36px;border-bottom:1px solid var(--line);background:
+    radial-gradient(760px 300px at 90% -70px, rgba(51,124,155,.14), transparent 65%)}
+  .doc-meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .chip{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.05em;border-radius:5px;padding:3px 9px}
+  .chip.no{color:var(--blue);background:rgba(0,91,130,.06);border:1px solid rgba(0,91,130,.18)}
+  .chip.status{color:var(--orange);background:rgba(204,78,11,.08);border:1px solid rgba(204,78,11,.3)}
+  .chip.status.approved{color:var(--green);background:rgba(31,157,107,.08);border-color:rgba(31,157,107,.25)}
+  h1{font-family:var(--disp);font-weight:800;font-size:clamp(28px,4vw,40px);line-height:1.12;letter-spacing:-.02em;margin-bottom:14px}
+  .abstract{font-size:17px;color:var(--slate);max-width:64ch}
+  .meta-table{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .meta-cell{background:var(--panel);padding:10px 14px}
+  .meta-cell b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:2px}
+  .meta-cell span{font-size:14px}
+
+  main{padding:44px 0 24px}
+  main h2{font-family:var(--disp);font-weight:700;font-size:23px;letter-spacing:-.01em;margin:38px 0 12px;padding-top:8px}
+  main h2:first-child{margin-top:0}
+  main h2 .sec-no{font-family:var(--mono);font-size:13px;color:var(--orange);font-weight:600;margin-right:10px}
+  main h3{font-family:var(--disp);font-weight:700;font-size:17px;margin:26px 0 8px}
+  main p{margin-bottom:14px;max-width:72ch}
+  main ul,main ol{margin:0 0 14px 22px;max-width:70ch}
+  main li{margin-bottom:6px}
+
+  pre{background:#0B3349;color:#DCEAF2;font-family:var(--mono);font-size:13px;line-height:1.6;border-radius:10px;padding:18px 20px;overflow-x:auto;margin:0 0 18px;border-left:3px solid var(--orange)}
+  code{font-family:var(--mono);font-size:.92em}
+  p code,li code{background:rgba(0,91,130,.07);border:1px solid rgba(0,91,130,.14);border-radius:4px;padding:1px 5px;color:var(--deep)}
+
+  .callout{border:1px solid var(--line);border-left:3px solid var(--blue);background:var(--panel);border-radius:8px;padding:14px 18px;margin:0 0 18px;font-size:14.5px}
+  .callout.warn{border-left-color:var(--orange)}
+  .callout b{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px;color:var(--cyan)}
+  .callout.warn b{color:var(--orange)}
+
+  table.doc{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  table.doc th{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;text-align:left;color:var(--cyan);background:rgba(0,91,130,.05);padding:9px 14px;border-bottom:1px solid var(--line)}
+  table.doc td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  table.doc tr:last-child td{border-bottom:none}
+
+  .figure{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;margin:0 0 18px;text-align:center}
+  .figure figcaption{font-family:var(--mono);font-size:12px;color:var(--slate);margin-top:12px}
+
+  footer{margin-top:40px;padding:30px 0 44px;background:var(--blue);border-top:2px solid var(--orange);color:#BFD9E5;font-size:13px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  footer .mono{font-family:var(--mono);font-size:12px;color:#9CC3D5}
+  footer a{color:#fff}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <img src="../assets/TSANet-icon_white_blue_512px.png" alt="">
+    <a href="../index.html">TSANet Developer Hub</a>
+    <span class="crumb">docs / TSANET-2026-001</span>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="doc-meta-row">
+      <span class="chip no">TSANET-2026-001</span>
+      <span class="chip status">DRAFT</span>
+    </div>
+    <h1>The canonical case model, and how connectors map onto it</h1>
+    <p class="abstract">Every TSANet connector maps the same canonical collaboration case onto a different platform's data model. This document specifies that canonical model, the places where the write schema and the read schema deliberately diverge, and the mapping decisions each connector has to make. It is for anyone building or reviewing an integration against the Connect API.</p>
+    <div class="meta-table">
+      <div class="meta-cell"><b>Date</b><span>2026-08-15</span></div>
+      <div class="meta-cell"><b>Version</b><span>0.1</span></div>
+      <div class="meta-cell"><b>Audience</b><span>Member integrators</span></div>
+      <div class="meta-cell"><b>Verified against</b><span>Connect API OpenAPI spec</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <h2><span class="sec-no">1</span>Background</h2>
+    <p>TSANet Connect exposes one canonical case model. A collaboration between two members is a single case in the platform, and each side sees it through their own connector — as a Salesforce custom object, a Zendesk ticket, a Dataverse row, or an Intercom back-office ticket. The connectors differ in almost everything except this: they all map to and from the same canonical shape.</p>
+    <p>That makes the canonical model the one contract worth understanding before any platform-specific work. It also makes its sharp edges worth writing down, because every connector has independently had to discover them.</p>
+
+    <div class="callout">
+      <b>Related</b>
+      Behavioural guidance for working with these endpoints is on <a href="../api/index.html">Working with the Connect API</a>. Platform-specific mappings are on the individual <a href="../index.html#connectors">connector pages</a>.
+    </div>
+
+    <h2><span class="sec-no">2</span>Two schemas, one case</h2>
+    <p>The most consequential property of the model is that <strong>the shape you write is not the shape you read</strong>. Case creation takes a request schema; retrieval returns a status schema; the field names differ between them. This is not a defect, and it is not documented as a mapping anywhere — an integrator meets it when a read-back returns nothing under the names they just sent.</p>
+
+    <h3>2.1 Field-name divergence</h3>
+    <table class="doc">
+      <tr><th>Concept</th><th>Write (create request)</th><th>Read (case status)</th></tr>
+      <tr><td>Short problem title</td><td><code>problemSummary</code></td><td><code>summary</code></td></tr>
+      <tr><td>Full problem text</td><td><code>problemDescription</code></td><td><code>description</code></td></tr>
+      <tr><td>Your own case number</td><td><code>internalCaseNumber</code></td><td><code>submitterCaseNumber</code> or <code>receiverCaseNumber</code>, depending which side you are</td></tr>
+      <tr><td>Submitter contact</td><td><code>submitterContactDetails</code> object</td><td>flattened onto the case</td></tr>
+      <tr><td>Counterparty identity</td><td>implied by the form target</td><td><code>submitCompanyName</code> / <code>receiveCompanyName</code> and their IDs</td></tr>
+    </table>
+
+    <div class="callout warn">
+      <b>Constraint</b>
+      A mapping layer written from the create request alone will fail silently on read-back. Model the two schemas separately and map between them explicitly, rather than assuming one round-trips into the other.
+    </div>
+
+    <h3>2.2 Fields that only exist on read</h3>
+    <p>The status schema carries lifecycle state the write schema has no concept of: <code>token</code>, <code>status</code>, <code>direction</code>, <code>createdAt</code> and <code>updatedAt</code>, <code>respondBy</code>, and <code>responded</code>. Two of these deserve particular attention.</p>
+    <ul>
+      <li><code>token</code> is the join key for everything. It appears in every subsequent URL and in every webhook payload. Persist it at creation, before anything else in your flow can fail.</li>
+      <li><code>responded</code> is a boolean, and it — not the status name — is what gates the response SLA. Once it is true the platform has stopped tracking <code>respondBy</code>, so any countdown built on the status name alone will display a deadline nobody is measuring.</li>
+    </ul>
+
+    <h2><span class="sec-no">3</span>Custom fields are data, not schema</h2>
+    <p>Beyond the canonical fields, each partner defines their own intake form. Those fields arrive as a typed template from the form endpoints and are submitted back as a <code>customFields[]</code> array. No connector hardcodes them — the mapping is driven by the template fetched at submission time.</p>
+
+    <h3>3.1 Form sections</h3>
+    <p>The template groups fields into sections, which is what lets a connector lay the form out sensibly rather than as a flat list:</p>
+    <table class="doc">
+      <tr><th>Section</th><th>Carries</th></tr>
+      <tr><td><code>PROBLEM_SECTION</code></td><td>The problem itself — summary, description, severity context</td></tr>
+      <tr><td><code>CONTACT_SECTION</code></td><td>Who is asking, and how to reach them</td></tr>
+      <tr><td><code>COMMON_CUSTOMER_SECTION</code></td><td>The shared end customer, where both members serve the same one</td></tr>
+    </table>
+    <p>That third section is the mechanism for identifying the end customer a collaboration is about. Because it is a partner-defined section rather than a fixed field, a connector that wants to resolve an incoming case to a local account record has to read it as a custom field and map it — there is no canonical <code>endCustomer</code> to bind to.</p>
+
+    <div class="callout warn">
+      <b>Constraint</b>
+      Fetch the form template fresh for every submission. Partners change their forms, and the <code>documentId</code> you must submit alongside comes from that same fetch. A cached template means a stale <code>documentId</code> and a rejected case.
+    </div>
+
+    <h3>3.2 Field types the template can specify</h3>
+    <p>Custom fields are typed — <code>STRING</code>, <code>TEXT</code>, <code>EMAIL</code>, <code>PHONE</code>, <code>INTEGER</code>, <code>URL</code>, <code>SELECT</code> and <code>HIDDEN</code> among them — and a connector is expected to render each appropriately rather than treating everything as free text.</p>
+    <div class="callout warn">
+      <b>Constraint</b>
+      A <code>SELECT</code> field's options are <strong>newline-delimited</strong>, not comma-delimited, and the structured <code>selections[]</code> array is frequently empty. Splitting on commas collapses every choice into a single option — a bug that renders perfectly and is wrong. Parse <code>selections[].value</code> first, fall back to splitting on newlines, and only then on commas.
+    </div>
+
+    <h2><span class="sec-no">4</span>Where connectors put the data</h2>
+    <p>The canonical model says nothing about storage, and the shipped connectors have made genuinely opposite choices. Both are correct; the difference is worth understanding before designing a new one.</p>
+    <table class="doc">
+      <tr><th>Approach</th><th>Example</th><th>Consequence</th></tr>
+      <tr><td>State on the platform's own record</td><td>Zendesk — custom fields and comments on the ticket</td><td>Fewer objects, native to the agent's view, but collaboration state is entangled with the member's own ticket lifecycle</td></tr>
+      <tr><td>State in dedicated objects</td><td>Salesforce and Dynamics — dedicated case, note and response tables linked to the standard record</td><td>The platform's own record is never modified; collaboration data is separately reportable and separately governed</td></tr>
+    </table>
+    <p>The second approach has proven easier to reason about at scale, mostly because it keeps a member's existing queues and reporting untouched. The first is lighter to install. Neither is a platform requirement.</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 620 210" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One canonical case in the platform maps outward to a connector-specific representation on each member's side, with the token as the join key.">
+        <rect x="200" y="16" width="220" height="56" rx="8" fill="rgba(0,91,130,.07)" stroke="#005B82" stroke-width="1.5"/>
+        <text x="310" y="40" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="600" fill="#093D56">Canonical case</text>
+        <text x="310" y="58" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="11" fill="#41637A">token is the join key</text>
+
+        <path d="M270,72 V104 H120 V128" fill="none" stroke="#41637A" stroke-width="1.5"/>
+        <path d="M350,72 V104 H500 V128" fill="none" stroke="#41637A" stroke-width="1.5"/>
+
+        <rect x="20" y="130" width="200" height="62" rx="8" fill="#FFFFFF" stroke="#D7E4EB" stroke-width="1.5"/>
+        <text x="34" y="152" font-family="JetBrains Mono,monospace" font-size="11.5" font-weight="600" fill="#093D56">Member A connector</text>
+        <text x="34" y="169" font-family="Instrument Sans,sans-serif" font-size="11" fill="#41637A">own fields, own storage,</text>
+        <text x="34" y="184" font-family="Instrument Sans,sans-serif" font-size="11" fill="#41637A">own note-visibility model</text>
+
+        <rect x="400" y="130" width="200" height="62" rx="8" fill="#FFFFFF" stroke="#D7E4EB" stroke-width="1.5"/>
+        <text x="414" y="152" font-family="JetBrains Mono,monospace" font-size="11.5" font-weight="600" fill="#093D56">Member B connector</text>
+        <text x="414" y="169" font-family="Instrument Sans,sans-serif" font-size="11" fill="#41637A">different platform,</text>
+        <text x="414" y="184" font-family="Instrument Sans,sans-serif" font-size="11" fill="#41637A">same canonical case</text>
+      </svg>
+      <figcaption>Figure 1 — One case, two representations. Neither member sees the other's mapping; the token is what makes them the same case.</figcaption>
+    </div>
+
+    <h2><span class="sec-no">5</span>Known mapping gaps</h2>
+    <p>Two mappings are not cleanly expressible today. Both are recorded here so integrators design around them deliberately rather than discovering them mid-build.</p>
+
+    <h3>5.1 Priority is three levels; most members use four</h3>
+    <p>The canonical model has <code>LOW</code>, <code>MEDIUM</code> and <code>HIGH</code>. Members commonly run a four-level severity scale (S1–S4), so a three-to-four mapping is required in both directions, and it has to stay synchronised across the case lifecycle for both sides' service levels to hold. There is no canonical answer; each connector currently decides its own collapse, which means a case can read as a different severity to each party.</p>
+
+    <h3>5.2 Note direction is a case property, not a note property</h3>
+    <p>The note object carries no direction field. Notes are written under a synchronisation identity, so author fields are identical regardless of who sent one, and the only available signal is the company name — which is ambiguous when both organisations have similar names. Direction is reliably derivable from the case, not from the note. A connector that labels notes "sent" or "received" should derive that from case direction and its own record of what it posted.</p>
+
+    <div class="callout">
+      <b>Note</b>
+      A useful convention where both sides agree to it: put a structured event type in the note <code>summary</code> ("status change", "severity change", "new public note") and the human content in <code>description</code>. That gives either side something to build automation on without an API change. It is a convention, not a platform feature.
+    </div>
+
+    <h2><span class="sec-no">6</span>Revision history</h2>
+    <table class="doc">
+      <tr><th>Version</th><th>Date</th><th>Change</th></tr>
+      <tr><td>0.1</td><td>2026-08-15</td><td>Initial draft. Field names verified against the OpenAPI specification rather than taken from connector source.</td></tr>
+    </table>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>TSANet Connect Platform Engineering · <a href="../index.html">Developer Hub</a></div>
+    <div class="mono">TSANET-2026-001 · v0.1</div>
+  </div>
+</footer>
+
+</body>
+</html>

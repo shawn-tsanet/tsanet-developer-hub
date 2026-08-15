@@ -191,6 +191,12 @@
     <p class="eyebrow">Collaboration requests</p>
     <h2>The lifecycle, and the four rules that catch people</h2>
     <div class="gotcha">
+      <h4>What you send is not what you read back</h4>
+      <p>The write model and the read model use <strong>different names for the same fields</strong>. You POST <code>problemSummary</code> and <code>problemDescription</code>; you GET <code>summary</code> and <code>description</code>. Your own case number goes out as <code>internalCaseNumber</code> and comes back as <code>submitterCaseNumber</code> or <code>receiverCaseNumber</code> depending on which side you are. Contact details go out under <code>submitterContactDetails</code> and come back flattened onto the case.</p>
+      <p>Nothing is wrong when this happens — it is one case with two schemas. But a mapping layer written from the POST body alone will silently fail to read anything back.</p>
+      <p class="where">Verified against <code>CollaborationRequestDTO</code> (write) and <code>CollaborationRequestStatusDTO</code> (read) — see <a href="../docs/tsanet-2026-001-canonical-case-model.html">TSANET-2026-001</a></p>
+    </div>
+    <div class="gotcha">
       <h4>Save the token immediately — it is the primary key</h4>
       <p>A numeric <code>id</code> exists, but every path uses <code>token</code>. Persist it durably at the moment of creation, before anything else can fail. An integration that creates a case and then loses the token has orphaned it: the partner has a case nobody on your side can find.</p>
     </div>
@@ -264,11 +270,27 @@ org.tsanet.connect.collaboration-request.note.created</code></pre>
       <p>An event names a token and little else. Do not try to reconstruct state from the event body: acknowledge fast, then fetch the case and act on what you read. This also makes redelivery harmless, provided your writes are keyed on the token.</p>
     </div>
     <div class="gotcha">
-      <h4>Delivery is a single attempt</h4>
-      <p>There is no retry ladder behind you. Acknowledge with a 200 on every branch, including branches where you rejected the payload — a 4xx buys you nothing because nothing will retry it. Then run a reconciliation poll as the real safety net.</p>
+      <h4>Delivery is at-least-once, so build for duplicates</h4>
+      <p>Your endpoint may receive the same event more than once, and concurrent delivery workers mean events can arrive <em>out of order</em>. Deduplicate on the CloudEvent <code>id</code> (v2), or on <code>requestToken</code> + <code>eventType</code> + <code>timestamp</code> (v1). The pull-on-notify pattern is naturally tolerant of both, which is another reason to fetch rather than trust the payload.</p>
+    </div>
+    <div class="gotcha">
+      <h4>4xx is permanent — it is not a "try me later"</h4>
+      <p>A 4xx response is treated as a permanent failure and never retried; only 5xx responses and network timeouts trigger redelivery. So if you reject a payload you cannot route, returning 400 discards the event for good. Acknowledge with a 200 and handle the problem on your side, then let reconciliation catch anything genuinely lost.</p>
       <p class="where">Recovery design on <a href="../connectors/fin-intercom.html#recovery">Fin / Intercom → Recovery</a></p>
     </div>
-    <p>Subscribe with <code>POST /v2/webhooks</code> carrying a <code>callbackUrl</code> and <code>callbackAuth</code>. Save the response <code>id</code> for later management and the <code>secret</code> immediately — the signing key is returned only at creation and cannot be read back.</p>
+    <div class="gotcha">
+      <h4>You have 30 seconds to respond</h4>
+      <p>Past that the delivery is treated as failed. Acknowledge immediately and do the real work asynchronously — every connector on this hub fast-acks and hands off to a queue for exactly this reason.</p>
+    </div>
+    <div class="note" style="border-left-color:var(--orange)"><strong>The published retry policy is currently inconsistent.</strong> The OpenAPI specification states 5 total attempts with exponential backoff from 10s capped at 300s; the AsyncAPI specification states 2 retries an hour apart. Both are published, and they disagree. Until it is reconciled, do not design around a specific cadence — assume retries happen, make handlers idempotent, and treat the reconciliation poll as the real guarantee. Exhausted deliveries are dead-lettered either way and flagged in the delivery log.</div>
+    <h3>Managing a subscription</h3>
+    <ul class="tight">
+      <li>Subscribe with <code>POST /v2/webhooks</code> carrying a <code>callbackUrl</code> and <code>callbackAuth</code> (<code>BASIC</code>, <code>BEARER</code> or <code>HEADER</code>). If <code>callbackAuth</code> is set, the URL must be HTTPS.</li>
+      <li><strong>Save the <code>secret</code> at creation.</strong> The HMAC signing key is returned once and cannot be read back. Rotate it later with <code>POST /v1/webhooks/{id}/secret</code>.</li>
+      <li><strong>There is no update verb.</strong> No PATCH, no PUT — changing a callback URL or its credentials means delete and re-create the subscription.</li>
+      <li>Every delivery is signed <code>X-Hub-Signature-256: sha256=&lt;hex&gt;</code>. Verify before processing, not after.</li>
+      <li>Per-delivery status, including dead-lettered events, is queryable at <code>GET /v1/webhooks/{id}/deliveries</code>. That is the first place to look when a member says "we never got it".</li>
+    </ul>
   </div>
 </section>
 

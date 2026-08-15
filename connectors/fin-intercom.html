@@ -279,7 +279,7 @@
           <text class="ts" x="930" y="343">request.created · request.closed</text>
           <text class="ts" x="930" y="359">note.created · response.created</text>
           <text class="ts" x="930" y="375">response.updated</text>
-          <text class="ts" x="930" y="391">single attempt from our side</text>
+          <text class="ts" x="930" y="391">at-least-once · may duplicate</text>
 
           <rect class="bx-ext" x="916" y="446" width="228" height="72" rx="8"/>
           <text class="tt" x="930" y="468">Partner member</text>
@@ -455,7 +455,7 @@
   <div class="wrap">
     <p class="eyebrow">Flow 2 · inbound</p>
     <h2>A partner opens a case with us</h2>
-    <p>Push is thin and single-attempt, so intake fast-acks and the fetch is the truth: the event contributes only the token. Ticket creation is claim-before-create, arbitrated by the token's UNIQUE constraint in the link table, because check-then-create is a TOCTOU race that has produced duplicate-ticket defects in an earlier connector (<code>note.created</code> overtaking <code>collaboration-request.created</code>).</p>
+    <p>Push is thin and delivered at-least-once, so intake fast-acks and the fetch is the truth: the event contributes only the token. Ticket creation is claim-before-create, arbitrated by the token's UNIQUE constraint in the link table, because check-then-create is a TOCTOU race that has produced duplicate-ticket defects in an earlier connector (<code>note.created</code> overtaking <code>collaboration-request.created</code>).</p>
     <figure>
       <div class="diagram">
         <svg viewBox="0 0 1140 800" style="min-width:1000px" role="img" aria-label="Sequence diagram of the inbound flow: a partner opens a case on TSANet Connect, a CloudEvent reaches the connector, the connector fetches the case by token, claims it in the link table, creates the Intercom ticket, and the agent answers through the panel.">
