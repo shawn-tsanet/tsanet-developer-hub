@@ -49,7 +49,7 @@
   <div class="wrap">
     <div class="crumb"><a href="../index.html">Hub</a> / API</div>
     <h1>Working with the Connect API</h1>
-    <p class="lede">Not an endpoint reference — that already exists and is generated from the specification. This is the layer underneath: the behaviours that cost other integrators real time, gathered from building five connectors against this API.</p>
+    <p class="lede">Not an endpoint reference — that already exists and is generated from the specification. This is the layer underneath: the behaviours that cost other integrators real time, gathered from building four connectors and a Java client against this API.</p>
     <div class="meta-row">
       <span><b>Base</b> /v1 and /v2</span>
       <span><b>Auth</b> OAuth 2.0 client credentials</span>
@@ -57,6 +57,7 @@
       <span><b>Beta</b> connect2.tsanet.net</span>
     </div>
     <div class="toc">
+      <a href="#reference">Endpoint reference</a>
       <a href="#errors">Error modes</a>
       <a href="#auth">Authentication</a>
       <a href="#partners">Partners &amp; forms</a>
@@ -221,6 +222,11 @@
     </div>
     <h3>Statuses</h3>
     <p>The enum is <code>OPEN</code>, <code>INFORMATION</code>, <code>ACCEPTED</code>, <code>REJECTED</code>, <code>CLOSED</code>, <code>PENDINGACTION</code> — plus <code>ALL</code> as a list filter. <code>PENDINGACTION</code> surfaces cases awaiting an action from your side; it is thinly documented, so treat an unrecognised value as unknown rather than guessing. A stale status is visibly wrong; a guessed one is invisibly wrong.</p>
+    <div class="gotcha">
+      <h4>Approval is a commitment, not a routing step</h4>
+      <p>Accepting tells the partner an engineer is engaged, and it satisfies the SLA at the same moment. Those pull in opposite directions, which is why automating acceptance is a real decision rather than a convenience: a rule that accepts something nobody will work stops the clock and leaves the partner waiting — worse for them than an honest breach, because a breach is visible.</p>
+      <p class="where">Four shipping postures compared in <a href="../topics/entitlement-automation.html">Deciding what to accept automatically</a></p>
+    </div>
     <h3>Approval has an undocumented required field</h3>
     <p><code>engineerEmail</code> is required on <code>/approval</code> and omitting it returns an unhelpful error. It must also be on your company's TSANet-registered domain — an individual agent's own address fails domain validation, so use the dedicated API user's address.</p>
     <h3>Listing and polling</h3>
