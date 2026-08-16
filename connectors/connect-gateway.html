@@ -57,6 +57,7 @@
       <a href="#contract">The contract</a>
       <a href="#adapters">Building an adapter</a>
       <a href="#attachments">Attachments</a>
+      <a href="#lessons">Field lessons</a>
       <a href="#moving">What is still moving</a>
     </div>
   </div>
@@ -219,6 +220,78 @@ catch (<span class="good-v">GatewayException</span> rejected)        { surfaceTo
   </div>
 </section>
 
+<section id="lessons">
+  <div class="wrap">
+    <p class="eyebrow">Field lessons</p>
+    <h2>What the adapters that exist already paid for</h2>
+    <p>The gateway repository keeps a lessons-learned log with a deliberate promotion path: something seen on one platform is a lesson, something seen on two is a rule, and rules move into the adapter kits where they load automatically. The entries below are the ones that matter to anyone building an adapter, each tagged with where it was seen — the same probed-versus-read discipline the platform pages use.</p>
+
+    <h3>Probing a new platform</h3>
+    <div class="gotcha">
+      <h4>Published documentation is a lead, not a fact</h4>
+      <p>On the Intercom spike, the vendor's own documentation was wrong or silent on the majority of the findings that shaped the design — the response deadline, the signature byte format, the behaviour on unknown fields. Reading produces a plausible design; probing produces a correct one. Budget the spike accordingly, and tag every claim with whether it was probed or merely read.</p>
+      <p class="where">Seen on: Intercom, consistent with Zendesk</p>
+    </div>
+    <div class="gotcha">
+      <h4>But read the vendor's page once, carefully, first</h4>
+      <p>The opposite failure also costs real time: two facts that shaped the Zendesk connector — integration names are globally unique, the OAuth client is auto-created — were documented on a single page nobody had read. Probing is right when documentation is silent or suspect; reading first is right when nobody has read it yet.</p>
+      <p class="where">Platform-independent</p>
+    </div>
+    <div class="gotcha">
+      <h4>An endpoint's name can describe the opposite of what it does</h4>
+      <p>Zendesk's "Add Tags" endpoint <strong>replaces</strong> the tag set — and because other fields were tag-backed, the first write also blanked an unrelated status field. The failure is invisible unless you look at what was there before, which is why it ran in production before anyone noticed. Where a mutation's name implies a merge, read the object before and after.</p>
+      <p class="where">Seen on: Zendesk</p>
+    </div>
+    <div class="gotcha">
+      <h4>A success status is not evidence that anything happened</h4>
+      <p>Intercom returns 200 for a write carrying a field name it does not recognize, and ignores the field — so every downstream bug looks like application logic rather than a wire-format mistake, and you debug the wrong layer for hours. Probe for this deliberately on every new platform: send a plausible-but-wrong field name and read the object back. Where it is true, read-back-and-assert becomes a standing rule for that adapter.</p>
+      <p class="where">Seen on: Intercom · unverified elsewhere</p>
+    </div>
+    <div class="gotcha">
+      <h4>Permissions granted is not events subscribed</h4>
+      <p>An authentication page showing every permission enabled does not subscribe a single webhook topic — topics are selected separately, and an empty topic list delivers nothing, silently, presenting exactly like a broken endpoint or a bad signature. When a webhook never arrives, check the subscription list before debugging the receiver.</p>
+      <p class="where">Seen on: Intercom · the same split exists on several platforms</p>
+    </div>
+    <div class="gotcha">
+      <h4>Make a probe fail once before trusting it</h4>
+      <p>A probe that cannot report the negative case is measuring nothing — the estate has seen "clean" verdicts from checks that were scanning nothing at all. Before trusting a probe that returns clean, include a control you know it should catch, and check the exit status of the command you actually care about rather than the last one in a pipeline.</p>
+      <p class="where">Platform-independent · seen repeatedly</p>
+    </div>
+
+    <h3>Building and operating</h3>
+    <div class="gotcha">
+      <h4>A library correct in its reference embedding is not a correct library</h4>
+      <p>The Connect client library worked perfectly inside Spring Boot and failed time serialization everywhere else — Boot was invisibly supplying a Jackson module the library needed. The gateway extraction's standalone certification run caught it: three of nine live contract tests failing outside Boot, the exact defect a member embedding the engine would have hit on day one. Certify an embeddable artifact outside its reference framework, and when a failure appears or disappears with the harness, suspect the classpath before the code.</p>
+      <p class="where">Caught extracting gateway-engine, 2026-08-09</p>
+    </div>
+    <div class="gotcha">
+      <h4>A lost push window never replays</h4>
+      <p>During a Beta-estate webhook dispatch outage, events from a thirteen-hour window were permanently lost — nothing replayed on recovery, and the one live case created during it arrived only because the reconciliation poller listed it on the next cycle. The poller's cursor rests on a <em>probed</em> fact (a freshly created case returns <code>updatedAt</code> equal to <code>createdAt</code>, so an updated-after filter catches creations); had that been assumed and wrong, recovery would have missed exactly the new cases it exists to catch. <a href="../api/index.html#webhooks">Never build inbound on push alone</a>: reconciliation is the source of truth, push is the latency optimization.</p>
+      <p class="where">Seen on: TSANet Beta, 2026-08-09</p>
+    </div>
+    <div class="gotcha">
+      <h4>A boolean cannot describe a partial success</h4>
+      <p>An annotation that partly succeeded, recorded as a boolean "done", reports as fully done — and the manual recovery path stands on that record being honest. Wherever a write can partly land, the record needs at least three states; the Fin adapter's is none / degraded / full, with the degraded case audited loudly.</p>
+      <p class="where">Platform-independent</p>
+    </div>
+    <div class="gotcha">
+      <h4>A mutable reference in a deploy spec makes a rerun a silent no-op</h4>
+      <p>A container template that references its image by tag rolls nothing when a rerun pushes genuinely new code: the platform never re-resolves a same-tag reference. Every check stays green and the old code keeps running. Pin by digest or SHA anywhere a deploy would otherwise re-resolve nothing — a git dependency pinned by branch name is the same class of mistake.</p>
+      <p class="where">Seen on: Azure Container Apps</p>
+    </div>
+    <div class="gotcha">
+      <h4>The newest seam is where the defect is</h4>
+      <p>Across every review round on the first adapter, the blocking findings sat in whatever had been built most recently — and none were visible to unit tests. Review the newest seam hardest, and get the review from someone other than the author, because reviewing your own diff has a blind spot that care does not close.</p>
+      <p class="where">Platform-independent</p>
+    </div>
+    <div class="gotcha">
+      <h4>Merging is not releasing</h4>
+      <p>A merged pull request ships nothing on its own where a build artifact carries its own version. Check the tag against the manifest after every merge that touches shipped assets.</p>
+      <p class="where">Seen on: the Zendesk connector, more than once</p>
+    </div>
+  </div>
+</section>
+
 <section id="moving">
   <div class="wrap">
     <p class="eyebrow">Work in progress</p>
@@ -237,7 +310,7 @@ catch (<span class="good-v">GatewayException</span> rejected)        { surfaceTo
       </table>
     </div>
     <p>This page is deliberately ahead of the estate it describes — that is what the work-in-progress marker means. Expect it to change as the second and third adapters land, and read the <a href="fin-intercom.html">Fin&nbsp;/&nbsp;Intercom page</a> for what operating the first one actually looks like.</p>
-    <p class="gotcha" style="border-left-color:var(--blue)">Verified against <code>tsanetgit/Connect_Gateway</code> at the <code>v0.1.2</code> certification pin and main (2026-08-14): the repository README, the gateway decision log, the conformance harness documentation, both adapter-authoring kits, and the as-built architecture reference (2026-08-13).</p>
+    <p class="gotcha" style="border-left-color:var(--blue)">Verified against <code>tsanetgit/Connect_Gateway</code> at the <code>v0.1.2</code> certification pin and main (2026-08-14): the repository README, the gateway decision log, the conformance harness documentation, both adapter-authoring kits, the wiki's lessons-learned log (2026-08-13), and the as-built architecture reference (2026-08-13).</p>
   </div>
 </section>
 
