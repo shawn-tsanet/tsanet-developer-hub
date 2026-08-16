@@ -135,13 +135,13 @@
       <div class="diagram">
         <svg viewBox="0 0 640 208" style="min-width:560px" role="img" aria-labelledby="dgT dgD">
           <title id="dgT">The permitted lifecycle for a collaboration request</title>
-          <desc id="dgD">A request moves from Open to Accepted to Closed. Notes may pass in either direction while the request is Open without changing its status. A direct transition from Open to Closed is refused with HTTP 422.</desc>
+          <desc id="dgD">A request moves from Open to Accepted to Closed. While it is Open, a conversation loop runs on the Open state: partner notes come in and Fin's answers go out, over any number of rounds, without changing the status. A direct transition from Open to Closed is refused with HTTP 422.</desc>
           <defs>
             <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker>
           </defs>
           <path class="lnA" d="M64,78 C64,40 134,40 134,78" marker-end="url(#ar)"/>
-          <text class="tl" x="130" y="30" text-anchor="middle" style="fill:var(--blue);font-weight:600">notes, either direction</text>
-          <text class="tl" x="130" y="45" text-anchor="middle">status unchanged — the AI works here</text>
+          <text class="tl" x="130" y="30" text-anchor="middle" style="fill:var(--blue);font-weight:600">the conversation loop — any number of rounds</text>
+          <text class="tl" x="130" y="45" text-anchor="middle">notes in, Fin's answer out · status stays OPEN</text>
 
           <rect class="bx-acc" x="40" y="78" width="118" height="42" rx="6"/>
           <text class="tt" x="99" y="104" text-anchor="middle">OPEN</text>
