@@ -8,7 +8,7 @@ No build step, no framework, no dependencies. Plain HTML and CSS, deployable as-
 
 ## Where this lives
 
-Public at `shawn-tsanet/tsanet-developer-hub`, with the site served by GitHub Pages at <https://shawn-tsanet.github.io/tsanet-developer-hub/>. Moving the repo to the `tsanetgit` org needs agreement that is not yet in place — the current location is a deliberate holding position, not an oversight. GitHub Discussions is enabled with seven categories and is not promoted to members yet.
+Public at `shawn-tsanet/tsanet-developer-hub`, with the site served by GitHub Pages at <https://shawn-tsanet.github.io/tsanet-developer-hub/>. Moving the repo to the `tsanetgit` org needs agreement that is not yet in place — the current location is a deliberate holding position, not an oversight. GitHub Discussions is enabled with seven categories and is linked throughout the site's Community section. One standing caveat: GitHub cannot transfer Discussions between repositories, so anything posted before a move to `tsanetgit` stays behind.
 
 One consequence worth knowing: **GitHub cannot transfer Discussions between repositories.** Anything posted before a move is effectively scratch.
 
