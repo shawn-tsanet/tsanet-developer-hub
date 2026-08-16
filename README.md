@@ -57,7 +57,7 @@ The hub's value is that it is accurate about things that are easy to get wrong. 
 
 ### Redaction
 
-Some source material is marked internal. Before publishing anything derived from it, check for: member and partner company names, internal issue references, non-public hosts, credential and auth mechanics, and unreleased security findings. `./scripts/check.sh identifiers` catches the common cases but is not a substitute for reading.
+Some source material is marked internal. Before publishing anything derived from it, check for: member and partner company names, internal issue references, non-public hosts, credential and auth mechanics, and unreleased security findings. `./scripts/check.sh identifiers` catches the common cases but is not a substitute for reading. The pattern list it greps for is itself internal and lives untracked in `scripts/identifiers.local` — the check fails loudly if that file is missing.
 
 ## Adding a page
 

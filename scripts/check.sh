@@ -59,7 +59,14 @@ check_toc() {
 check_identifiers() {
   say "No internal identifiers in published pages"
   # Member names, internal trackers and non-public hosts must not reach the hub.
-  local pat=$(cat scripts/identifiers.local 2>/dev/null || echo '__redacted__')
+  # The pattern list is itself internal, so it lives untracked in
+  # scripts/identifiers.local (one extended-grep alternation on a single line).
+  if [ ! -f scripts/identifiers.local ]; then
+    bad "scripts/identifiers.local missing — identifier check cannot run"
+    return
+  fi
+  local pat
+  pat=$(cat scripts/identifiers.local)
   if grep -rniE "$pat" $(pages) 2>/dev/null; then bad "internal identifier found"; else ok "clean"; fi
 }
 
