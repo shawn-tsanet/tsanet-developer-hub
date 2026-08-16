@@ -1,44 +1,116 @@
 # TSANet Connect Developer Hub
 
-Static developer portal for TSANet Connect members. Covers connectors, gateways, the REST API and SDK, the interactive design document library, and community topic areas (AI-focused problem resolution systems, CRM and ticketing modernization).
+Static developer portal for TSANet Connect members: connectors, the REST API, a numbered design-document library, and cross-cutting topics.
 
-No build step, no framework, no external dependencies. Plain HTML and CSS, deployable as-is to GitHub Pages.
+No build step, no framework, no dependencies. Plain HTML and CSS, deployable as-is to GitHub Pages.
+
+---
+
+## Where this lives
+
+Currently **private**, at `shawn-tsanet/tsanet-developer-hub`. Moving it to the `tsanetgit` org needs agreement that is not yet in place — this is a deliberate holding position, not an oversight. GitHub Discussions is enabled on this repo with seven categories, and is likewise not open to members yet.
+
+One consequence worth knowing: **GitHub cannot transfer Discussions between repositories.** Anything posted before a move is effectively scratch.
 
 ## Structure
 
 ```
-index.html                  Portal landing page
-assets/                     Brand assets (2025 identity)
-  TSANet-icon_white_blue_512px.png            App tile icon (nav, footer, favicon)
-  TSANet-Connect-Icon_2025_vertical_Transparent.png   Connect mark (hero)
-  Blue_TSANet_icon.png                        Alternate icon (unused, reference)
-docs/                       Design document library (add standalone HTML docs here)
+index.html              Landing page — previews each section, links to its landing page
+assets/
+  hub.css               The design system: brand tokens, nav, cards, tables,
+                        pills, SVG diagram primitives, footer
+  doc.css               Design-document layer only; loads on top of hub.css
+  *.png                 Brand assets (2025 identity)
+connectors/index.html   Section landing: routing table + comparison matrix
+connectors/*.html       One page per platform, plus the SDK
+api/index.html          Behaviour and pitfalls; deliberately NOT an endpoint reference
+docs/index.html         Design-document library index + authoring conventions
+docs/tsanet-2026-*.html Numbered design documents
+docs/tsanet-design-doc-template.html   Copy this to start a new document
+topics/index.html       Section landing
+topics/*.html           Cross-connector write-ups
+community/index.html    Where to take what: issue trackers, membership, discussions
+scripts/check.sh        Static checks — run before every commit
 ```
 
-## Brand tokens
+Every section has a landing page, and navigation points at those rather than at anchors on the home page.
 
-All colors are defined once in the `:root` block of `index.html`, sampled from the 2025 brand assets:
+## Conventions
 
-| Token | Value | Use |
-|---|---|---|
-| `--blue` | `#005B82` | Petrol blue: nav, footer, primary text accents |
-| `--cyan` | `#337C9B` | Steel blue: secondary elements |
-| `--orange` | `#CC4E0B` | The single accent: primary button, headline emphasis, nav rule |
-| `--ink` | `#093D56` | Body headings |
+### Styling
 
-Orange is used sparingly by design, mirroring the single orange dot in the mark.
+**All colours live in `assets/hub.css`.** No page defines its own brand hex — `./scripts/check.sh tokens` enforces this. Pages may add page-local layout rules in a `<style>` block, but not colours.
 
-## Adding a design document
+Diagrams are inline SVG using the shared primitives — `.bx` `.bx-ext` `.bx-acc` `.bx-grn` for boxes, `.ln` `.lnA` for edges, `.tt` `.ts` `.tl` for text. Using literal colours in an SVG breaks the single-source-of-truth and will be caught by the token check.
 
-1. Drop the standalone HTML file into `docs/` (e.g. `docs/tsanet-2026-014-oauth-architecture.html`).
-2. Add a card in the Design Document Library section of `index.html` pointing to it.
+> `doc.css` scopes its link colour to `main a`. A global `a` rule there loads after `hub.css` and repaints the nav petrol-on-petrol — invisible. This has happened once already.
 
-## Deploying to GitHub Pages
+### Editorial standard
 
-1. Push this repo to the `tsanetgit` org (e.g. `tsanetgit/developer-hub`).
-2. Repo Settings > Pages > Deploy from branch > `main` / root.
-3. Optional custom domain: `developer.tsanet.org` (add a CNAME record pointing to `tsanetgit.github.io`, then set the domain in Pages settings; GitHub provisions TLS automatically).
+The hub's value is that it is accurate about things that are easy to get wrong. That imposes a few rules:
 
-## Community layer (optional)
+- **Verify against the source; say what you verified against.** Design documents have a *Verified against* cell for this. "Read the OpenAPI spec" and "probed live on Beta" are useful; memory is not.
+- **Where two sources disagree, say so on the page** rather than quietly picking one. The webhook retry policy is the live example: `openapi.yaml` and `webhook-asyncapi.yaml` state different policies, and the API page reports the contradiction instead of resolving it.
+- **Tag evidence level where nothing has been probed.** The ServiceNow assessment marks every claim `documented` (somebody read it) or `needs probe` (known unknown).
+- **Don't publish what isn't built.** ServiceNow is an assessment, not a connector page. Placeholder content that looks real — invented document numbers, invented discussion threads — was removed from this repo once already; don't reintroduce it.
+- **Check status claims against reality.** Several cards originally overstated: a "beta connector" that did not exist, a "GA" SDK that is v0.1.0.
 
-Discussion links point at GitHub Discussions in the tsanetgit org. To embed a discussion thread inline on any page (including design docs), add a [giscus](https://giscus.app) script block; it renders the mapped GitHub Discussion in place with no additional platform.
+### Redaction
+
+Some source material is marked internal. Before publishing anything derived from it, check for: member and partner company names, internal issue references, non-public hosts, credential and auth mechanics, and unreleased security findings. `./scripts/check.sh identifiers` catches the common cases but is not a substitute for reading.
+
+## Adding a page
+
+**A connector or topic page** — copy the closest existing page, keep the nav and footer blocks identical, add it to its section landing page *and* the relevant index card.
+
+**A design document** — copy `docs/tsanet-design-doc-template.html`, rename to `tsanet-2026-NNN-short-slug.html`, allocate the next number in sequence. Statuses are `DRAFT`, `APPROVED`, `SUPERSEDED`; the number never changes. Add it to `docs/index.html`. Full conventions are on that page.
+
+**Cross-link it.** Pages written earlier will not know your page exists — the API and connectors landing pages both had to be revisited to link the topics added after them. Search for related pages and add links both ways.
+
+## Checks
+
+```bash
+./scripts/check.sh            # all
+./scripts/check.sh links      # one check by name
+```
+
+Covers local links and assets, cross-page anchors, placeholder `href="#"`, page contents matching sections, internal identifiers, and colour-token drift. Every one of these has caught a real defect.
+
+**Diagram geometry cannot be checked from the shell** — it needs a browser to measure text. Serve the site and paste this into the console on any page with a figure:
+
+```js
+[...document.querySelectorAll('figure svg')].forEach((s,i)=>{
+  const [vx,vy,vw,vh]=s.getAttribute('viewBox').split(/\s+/).map(Number);
+  const boxes=[...s.querySelectorAll('rect')].filter(r=>+r.getAttribute('width')<520)
+    .map(r=>({x:+r.getAttribute('x'),y:+r.getAttribute('y'),w:+r.getAttribute('width'),h:+r.getAttribute('height')}));
+  const out=[];
+  [...s.querySelectorAll('text')].forEach(t=>{const b=t.getBBox();
+    if(b.x<vx-1||b.x+b.width>vx+vw+1||b.y+b.height>vy+vh+1) out.push('clipped: '+t.textContent);
+    const h=boxes.find(o=>b.x>=o.x&&b.x<o.x+o.w&&b.y>=o.y&&b.y<=o.y+o.h);
+    if(h&&b.x+b.width>h.x+h.w-2) out.push('spills its box: '+t.textContent);});
+  [...s.querySelectorAll('path')].forEach(p=>{const L=p.getTotalLength&&p.getTotalLength(); if(!L)return;
+    for(let d=0;d<=L;d+=2){const pt=p.getPointAtLength(d);
+      boxes.forEach(o=>{if(pt.x>o.x+2&&pt.x<o.x+o.w-2&&pt.y>o.y+2&&pt.y<o.y+o.h-2)
+        out.push('edge crosses a box: '+p.getAttribute('d').slice(0,30));});}});
+  const rows={};
+  [...s.querySelectorAll('text')].forEach(t=>{const b=t.getBBox(); const y=Math.round(b.y);
+    (rows[y]=rows[y]||[]).push({x:b.x,r:b.x+b.width,t:t.textContent});});
+  Object.values(rows).forEach(items=>{items.sort((a,b)=>a.x-b.x);
+    for(let j=1;j<items.length;j++) if(items[j].x<items[j-1].r-0.5)
+      out.push('text overlaps: '+items[j-1].t+' | '+items[j].t);});
+  console.log('svg '+i+':', [...new Set(out)].length?[...new Set(out)]:'clean');
+});
+```
+
+Visual inspection is not sufficient — this check found four defects on pages that looked correct, including an edge striking through a label and two colliding table columns.
+
+## Deploying
+
+Settings → Pages → deploy from `main` / root. `developer.tsanet.org` already resolves; set it as the custom domain in Pages settings once the repo location is settled.
+
+## Open items
+
+- **Repo location** — pending agreement to move to `tsanetgit`. Discussions cannot move with it.
+- **v1 → v2 migration.** Only three operations are deprecated (`GET /v1/collaboration-requests`, `POST`/`GET /v1/webhooks`), all sunset `2027-01-01`. Creating a case and every `{token}` sub-resource stay on v1. Fin/Intercom is on v2; Zendesk is on v1 webhooks with a tracked migration; Salesforce receives the v1 flat payload; Dynamics and the SDK are unverified. Migrating webhooks is a two-sided change — a consumer matching bare event types against a v2 subscription returns 200 and does nothing.
+- **Dynamics user guide** describes the Case form integration as a "Lightning Web Component". That is Salesforce terminology; the solution ships an HTML web resource. The hub notes the discrepancy; the source doc is still wrong.
+- **API reference drift** — the GitBook reference shows `description` as a query parameter on the attachment forward call; the spec has it in the multipart form.
