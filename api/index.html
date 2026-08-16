@@ -73,7 +73,7 @@
   <div class="wrap">
     <div class="status-band">
       <h3>Looking for the endpoint reference?</h3>
-      <p>Full request and response schemas, parameters and status codes for all 27 paths are published in the GitBook API Reference and generated from the specification, so it stays in step with the API. This page deliberately does not duplicate it — two copies of a reference is one copy that goes stale.</p>
+      <p>Full request and response schemas, parameters and status codes for all 27 paths are published in the GitBook API Reference and generated from the specification, which keeps it broadly in step with the API — broadly, not perfectly: <a href="#ref-drift">one known drift</a> is flagged on this page. It deliberately does not duplicate the reference — two copies of a reference is one copy that goes stale.</p>
       <div class="out">
         <a href="https://tsanet.gitbook.io/connect/api-reference">API Reference →</a>
         <a href="https://tsanet.gitbook.io/connect/api-reference/integration-guide">Integration guide →</a>
@@ -257,6 +257,11 @@
       <p>Two things the platform will not do for you: it creates <strong>no case note</strong> announcing the file, and it keeps <strong>no history</strong>. Both are yours to build.</p>
       <p class="where">Full model in <a href="../docs/tsanet-2026-002-case-attachments.html">TSANET-2026-002</a></p>
     </div>
+    <div class="gotcha" id="ref-drift">
+      <h4>The reference shows <code>description</code> in the wrong place</h4>
+      <p>On the forward call, the GitBook reference currently shows <code>description</code> as a query parameter. The specification puts it in the <code>multipart/form-data</code> body — a <strong>required</strong> field, capped at 500 characters, alongside <code>files</code>. A request built from the reference omits a required form field. Send it in the form.</p>
+      <p class="where">Verified against <code>openapi.yaml</code> — <code>POST /v1/collaboration-requests/{token}/attachments</code>, requestBody</p>
+    </div>
     <p class="where" style="font-family:var(--mono);font-size:11.5px;color:var(--mute)">Note-visibility modelling across three audiences: <a href="../connectors/zendesk.html#notes" style="color:var(--blue)">Zendesk → Note visibility</a></p>
   </div>
 </section>
@@ -325,7 +330,22 @@ org.tsanet.connect.collaboration-request.note.created</code></pre>
         </tbody>
       </table>
     </div>
-    <div class="note">One caveat worth knowing if you are reading connector source: some shipped integrations still subscribe on <code>/v1</code> deliberately, because their event handlers match the bare type strings. That is a migration in progress, not a recommendation — new work should be on v2.</div>
+    <h3>The migration is smaller than "v1 → v2" sounds</h3>
+    <p>The v2 surface is exactly three paths: the two list endpoints and the webhook subscription. Creating a case and every <code>{token}</code> sub-resource — approval, rejection, closure, notes, attachments, the information exchange — exist only on v1 and carry no deprecation. Migrating means moving your list polling and your webhook subscription; nothing else moves. And the webhook half is a <a href="#webhooks">two-sided change</a>: the subscription and the consumer's event-type matching have to move together, or every delivery returns 200 into a no-op.</p>
+    <h3>Where the shipped integrations stand</h3>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>Integration</th><th>Posture</th><th>Where it stands</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><a href="../connectors/fin-intercom.html">Fin / Intercom</a></td><td><span class="pill ok">v2</span></td><td>Consumes CloudEvents with prefixed type strings end to end.</td><td>Gateway source</td></tr>
+          <tr><td><a href="../connectors/zendesk.html">Zendesk</a></td><td><span class="pill warn">v1 · deliberate</span></td><td>The ZIS flow matches bare type strings, so a v2 subscription would deliver into a no-op. The CloudEvents migration is tracked and ships with a future app release; until then v1 is the correct choice for this connector.</td><td>Connector source and setup guide</td></tr>
+          <tr><td><a href="../connectors/salesforce.html">Salesforce</a></td><td><span class="pill warn">v1</span></td><td>The Apex REST endpoint receives the v1 flat payload.</td><td>Documented — not re-probed</td></tr>
+          <tr><td><a href="../connectors/connect-sdk.html">Connect SDK</a> v0.1.0</td><td><span class="pill warn">split</span></td><td>List reads already call <code>/v2/collaboration-requests/list</code>, but webhook subscribe and list go through the generated v1 client. A v2 webhook client is generated and nothing calls it.</td><td>SDK source and generated client</td></tr>
+          <tr><td><a href="../connectors/dynamics.html">Dynamics</a></td><td><span class="pill bad">unverified</span></td><td>Which webhook version the solution subscribes on has not been checked against source.</td><td>Needs probe</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">New work should be on v2 for both lists and webhooks. The v1 postures above are migrations in progress, not recommendations — and the Zendesk row is the live illustration of why the two sides of a webhook migration cannot move independently.</div>
   </div>
 </section>
 
