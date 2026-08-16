@@ -22,7 +22,7 @@ assets/
   doc.css               Design-document layer only; loads on top of hub.css
   *.png                 Brand assets (2025 identity)
 connectors/index.html   Section landing: routing table + comparison matrix
-connectors/*.html       One page per platform, plus the SDK
+connectors/*.html       One page per platform, plus the SDK and the Connect Gateway
 api/index.html          Behaviour and pitfalls; deliberately NOT an endpoint reference
 docs/index.html         Design-document library index + authoring conventions
 docs/tsanet-2026-*.html Numbered design documents
