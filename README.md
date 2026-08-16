@@ -8,7 +8,7 @@ No build step, no framework, no dependencies. Plain HTML and CSS, deployable as-
 
 ## Where this lives
 
-Currently **private**, at `shawn-tsanet/tsanet-developer-hub`. Moving it to the `tsanetgit` org needs agreement that is not yet in place — this is a deliberate holding position, not an oversight. GitHub Discussions is enabled on this repo with seven categories, and is likewise not open to members yet.
+Public at `shawn-tsanet/tsanet-developer-hub`, with the site served by GitHub Pages at <https://shawn-tsanet.github.io/tsanet-developer-hub/>. Moving the repo to the `tsanetgit` org needs agreement that is not yet in place — the current location is a deliberate holding position, not an oversight. GitHub Discussions is enabled with seven categories and is not promoted to members yet.
 
 One consequence worth knowing: **GitHub cannot transfer Discussions between repositories.** Anything posted before a move is effectively scratch.
 
@@ -106,7 +106,7 @@ Visual inspection is not sufficient — this check found four defects on pages t
 
 ## Deploying
 
-Settings → Pages → deploy from `main` / root. `developer.tsanet.org` already resolves; set it as the custom domain in Pages settings once the repo location is settled.
+Live: Pages deploys from `main` / root on every push — no action needed beyond pushing. `developer.tsanet.org` already resolves; set it as the custom domain in Pages settings once the repo location is settled.
 
 ## Open items
 
