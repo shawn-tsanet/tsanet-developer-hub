@@ -227,8 +227,8 @@
       <p>Accepting tells the partner an engineer is engaged, and it satisfies the SLA at the same moment. Those pull in opposite directions, which is why automating acceptance is a real decision rather than a convenience: a rule that accepts something nobody will work stops the clock and leaves the partner waiting — worse for them than an honest breach, because a breach is visible.</p>
       <p class="where">Four shipping postures compared in <a href="../topics/entitlement-automation.html">Deciding what to accept automatically</a></p>
     </div>
-    <h3>Approval has an undocumented required field</h3>
-    <p><code>engineerEmail</code> is required on <code>/approval</code> and omitting it returns an unhelpful error. It must also be on your company's TSANet-registered domain — an individual agent's own address fails domain validation, so use the dedicated API user's address.</p>
+    <h3>Approval's email carries an undocumented constraint</h3>
+    <p><code>engineerEmail</code> is required on <code>/approval</code> — the specification marks it required, though omitting it still returns an unhelpful error. What the specification does not say: the address must be on your company's TSANet-registered domain. An individual agent's own address fails domain validation, so use the dedicated API user's address.</p>
     <h3>Listing and polling</h3>
     <ul class="tight">
       <li><code>/v2/collaboration-requests</code> is paginated and returns <code>{content:[...]}</code>; <code>/v2/collaboration-requests/list</code> returns a plain array and supports <code>updatedAfter</code> and <code>createdAfter</code>.</li>
