@@ -394,7 +394,7 @@
   <div class="wrap">
     <p class="eyebrow">Flow 1a · submit outcomes</p>
     <h2>What a submit can become, and why ambiguity is parked</h2>
-    <p>Case submission is not idempotent and the Connect API offers no idempotency key: <code>createCollaborationRequest</code> documents 200/400/401 only, so a second POST with the same <code>internalCaseNumber</code> simply creates a second case. The gateway contract therefore splits failures into exactly two kinds, and treats everything ambiguous as ambiguous.</p>
+    <p>Case submission is not idempotent and the Connect API offers no idempotency key: <code>createCollaborationRequest</code> documents 200/400/401/403 and no conflict status, so a second POST with the same <code>internalCaseNumber</code> simply creates a second case. The gateway contract therefore splits failures into exactly two kinds, and treats everything ambiguous as ambiguous.</p>
     <figure>
       <div class="diagram">
         <svg viewBox="0 0 1120 372" style="min-width:960px" role="img" aria-label="Submit outcome taxonomy: a submit either succeeds, is definitively rejected before create, or is ambiguous; ambiguous outcomes park the flow UNRESOLVED and reconcile through findSubmission, which either confirms the case or re-arms the draft.">
