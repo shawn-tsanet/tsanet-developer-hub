@@ -87,8 +87,8 @@
     <div class="grid g2" style="margin-bottom:24px">
       <div class="posture p1">
         <h3>Accept everything</h3>
-        <div class="who">Zendesk — one trigger</div>
-        <p>Every inbound case is accepted the moment it arrives. No condition, no lookup, no check that the request is one you can act on.</p>
+        <div class="who">Zendesk — app setting</div>
+        <p>Every inbound case is accepted the moment it arrives. No condition, no lookup, no check that the request is one you can act on. Ships as a built-in setting, off by default.</p>
         <p class="trade">Buys: the SLA can never be breached. Spends: every case is a promise, including the ones that turn out not to be yours.</p>
       </div>
       <div class="posture p2">
@@ -125,7 +125,7 @@
           <text class="tt" x="660" y="52" text-anchor="middle">Entitled</text>
           <text class="tt" x="880" y="52" text-anchor="middle">Nothing</text>
 
-          <text class="ts" x="180" y="104" text-anchor="middle">Zendesk trigger</text>
+          <text class="ts" x="180" y="104" text-anchor="middle">Zendesk setting</text>
           <text class="ts" x="420" y="104" text-anchor="middle">Dynamics routing</text>
           <text class="ts" x="660" y="104" text-anchor="middle">Salesforce asset</text>
           <text class="ts" x="880" y="104" text-anchor="middle">Fin guardrail</text>
@@ -159,10 +159,10 @@
     <p class="eyebrow">Implementations</p>
     <h2>How each connector actually does it</h2>
 
-    <h3>Zendesk: one trigger, no code</h3>
-    <p>The accept pipeline already ships — it watches the TSANet Action field and calls the approval API when that field is set. The only missing piece is who sets it, and a single trigger fills that in: fire on ticket creation, condition on the inbound tag, action sets TSANet Action to Accept. Everything runs server-side, so no agent needs to be logged in.</p>
-    <p>Crucially, <strong>trigger conditions give you scoping for free</strong>. Adding a condition on the partner field turns "accept everything" into "accept everything from this partner" — which moves you along the spectrum without writing anything. Cases that do not match simply stay open for normal triage.</p>
-    <div class="note">The published guide is honest about the cost: auto-accept commits you instantly, and the triage options are skipped for auto-accepted cases. If some cases should still be looked at first, the conditional form is the answer. <a href="https://tsanet.gitbook.io/connect/documentation/zendesk-app/auto-accepting-inbound-cases">Setup guide →</a></p>
+    <h3>Zendesk: a setting for everything, a trigger for conditions</h3>
+    <p>Since app v1.0.69 there are two paths, split by policy. Accepting <em>everything</em> is a built-in app setting — <em>Auto-accept inbound requests</em>, off by default — that accepts each inbound case the moment its ticket is created, with your ticket number as the case reference. It is deliberately unconditional, and toggling it takes effect only after a bundle redeploy. Accepting <em>conditionally</em> stays with a Zendesk trigger on the TSANet Action field, which rides the optional field-actions feature: fire on ticket creation, condition on the inbound tag, action sets TSANet Action to Accept. Both run server-side, so no agent needs to be logged in, and both are verified end to end — the partner sees the case accepted roughly fifteen seconds after submitting it.</p>
+    <p>Crucially, <strong>trigger conditions are the scoping mechanism</strong>. A condition on the partner field turns "accept everything" into "accept everything from this partner" — which moves you along the spectrum without writing anything. Cases that do not match simply stay open for normal triage.</p>
+    <div class="note">The published guide is honest about the cost: auto-accept commits you instantly, and the triage options are skipped for auto-accepted cases. If some cases should still be looked at first, use the trigger path and put those conditions in the trigger. <a href="https://tsanet.gitbook.io/connect/documentation/zendesk-app/auto-accepting-inbound-cases">Setup guide →</a></div>
 
     <h3>Salesforce: verify, then accept — or reject</h3>
     <p>The shipped flow is the most opinionated of the four, and the only one that will say no. It fires on TSANet Case creation where no local case is linked, direction is inbound, and a serial number is present:</p>
