@@ -2,7 +2,11 @@
    Page-specific styles (hero, lifecycle rail) stay in the page that uses them. */
 
 :root{
-  /* TSANet brand tokens: replace with official hex values from the brand file if they differ */
+  /* TSANet brand palette — verified against "TSANet Logo Guide 2026v3" (Logo Suite).
+     The six brand hues are exact; paper/panel/ink/slate/line/mute/wash are derived
+     neutrals; green/red are functional status colours outside the brand palette.
+     The wordmark is set in DIN 2014 (logo artwork only) — always use the logo
+     images in assets/, never a substitute font. */
   --paper:#F4F8FA;
   --panel:#FFFFFF;
   --ink:#093D56;        /* deep petrol text */
@@ -12,6 +16,9 @@
   --cyan:#337C9B;       /* TSANet steel blue */
   --deep:#00476B;       /* darker petrol */
   --orange:#CC4E0B;     /* TSANet orange, the one dot */
+  --orange2:#D6713C;    /* TSANet light orange */
+  --steel:#7AAAC1;      /* TSANet soft blue */
+  --pale:#99BDCD;       /* TSANet pale blue — tints on petrol surfaces */
   --amber:#CC4E0B;
   --green:#1F9D6B;
   --red:#C94F4F;
@@ -32,9 +39,9 @@ a{color:inherit;text-decoration:none}
 nav{position:sticky;top:0;z-index:50;background:var(--blue);border-bottom:2px solid var(--orange)}
 .nav-in{display:flex;align-items:center;gap:28px;height:60px}
 .brand{font-family:var(--disp);font-weight:800;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;color:#FFFFFF}
-.brand-img{width:28px;height:28px;border-radius:7px;flex:none}
-.brand small{font-weight:600;color:#A8CFDF}
-.nav-links{display:flex;gap:22px;margin-left:auto;font-size:14px;font-weight:500;color:#BFD9E5}
+.brand-img{height:30px;width:auto;flex:none}
+.brand small{font-weight:600;color:var(--pale)}
+.nav-links{display:flex;gap:22px;margin-left:auto;font-size:14px;font-weight:500;color:var(--pale)}
 .nav-links a:hover{color:#FFFFFF}
 .nav-links a:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:2px}
 .nav-links a[aria-current="page"]{color:#FFFFFF;box-shadow:inset 0 -2px 0 var(--orange)}
@@ -95,7 +102,7 @@ caption{caption-side:bottom;text-align:left;font-size:12.5px;color:var(--mute);p
 /* ---- pills ---- */
 .pill{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.05em;border-radius:5px;padding:2px 7px;white-space:nowrap;display:inline-block}
 .pill.ok{color:var(--green);background:rgba(31,157,107,.09);border:1px solid rgba(31,157,107,.28)}
-.pill.warn{color:var(--orange);background:rgba(204,78,11,.08);border:1px solid rgba(204,78,11,.3)}
+.pill.warn{color:var(--orange2);background:rgba(214,113,60,.1);border:1px solid rgba(214,113,60,.35)}
 .pill.bad{color:var(--red);background:rgba(201,79,79,.08);border:1px solid rgba(201,79,79,.3)}
 .pill.info{color:var(--deep);background:rgba(0,91,130,.07);border:1px solid rgba(0,91,130,.2)}
 
@@ -152,12 +159,12 @@ figcaption{font-size:13px;color:var(--mute);margin-top:14px;line-height:1.6;max-
 /* ---- footer ---- */
 footer{padding:44px 0 60px;color:#BFD9E5;font-size:13.5px;background:var(--blue);border-top:2px solid var(--orange);margin-top:-1px}
 footer .mono{color:#9CC3D5;font-family:var(--mono);font-size:12px}
-footer p{color:#BFD9E5;max-width:none}
+footer p{color:var(--pale);max-width:none}
 .foot-in{display:flex;justify-content:space-between;gap:32px;flex-wrap:wrap;align-items:flex-start}
 footer a{color:#fff}
 footer a:hover{text-decoration:underline}
 .foot-nav{display:flex;flex-direction:column;gap:7px;font-size:13px}
-.foot-nav a{color:#CFE3ED}
+.foot-nav a{color:var(--pale)}
 .foot-nav a:hover{color:#fff}
 .foot-links{display:flex;flex-direction:column;gap:7px;text-align:right}
 @media(max-width:640px){.foot-links{text-align:left}}

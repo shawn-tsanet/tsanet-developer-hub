@@ -20,7 +20,8 @@ assets/
   hub.css               The design system: brand tokens, nav, cards, tables,
                         pills, SVG diagram primitives, footer
   doc.css               Design-document layer only; loads on top of hub.css
-  *.png                 Brand assets (2025 identity)
+  *.png                 Brand assets, generated from the TSANet Logo Suite
+                        (2026 identity; the suite itself stays untracked)
 connectors/index.html   Section landing: routing table + comparison matrix
 connectors/*.html       One page per platform, plus the SDK and the Connect Gateway
 api/index.html          Behaviour and pitfalls; deliberately NOT an endpoint reference
@@ -39,7 +40,7 @@ Every section has a landing page, and navigation points at those rather than at 
 
 ### Styling
 
-**All colours live in `assets/hub.css`.** No page defines its own brand hex — `./scripts/check.sh tokens` enforces this. Pages may add page-local layout rules in a `<style>` block, but not colours.
+**All colours live in `assets/hub.css`.** No page defines its own brand hex — `./scripts/check.sh tokens` enforces this. Pages may add page-local layout rules in a `<style>` block, but not colours. The palette is verified against *TSANet Logo Guide 2026v3* (in the untracked `TSANet Logo Suite/` folder): six brand hues exactly as specified, derived neutrals, and green/red as functional status colours outside the brand palette. The wordmark is DIN 2014 and exists only as logo artwork — never set "tsanet" in a substitute font.
 
 Diagrams are inline SVG using the shared primitives — `.bx` `.bx-ext` `.bx-acc` `.bx-grn` for boxes, `.ln` `.lnA` for edges, `.tt` `.ts` `.tl` for text. Using literal colours in an SVG breaks the single-source-of-truth and will be caught by the token check.
 
