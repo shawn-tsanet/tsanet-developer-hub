@@ -21,7 +21,7 @@ check_links() {
     d=$(dirname "$f")
     grep -oE 'href="[^"#][^"]*"|src="[^"]*"' "$f" | sed 's/.*="//;s/"//' \
       | grep -vE '^(https?:|mailto:)' | sort -u | while read -r l; do
-        t="${l%%#*}"; [ -z "$t" ] && continue
+        t="${l%%#*}"; t="${t%%\?*}"; [ -z "$t" ] && continue
         [ -e "$d/$t" ] || echo "$f -> $l"
       done
   done < <(pages) | while read -r line; do bad "$line"; n=1; done

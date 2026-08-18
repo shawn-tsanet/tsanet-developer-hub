@@ -46,6 +46,8 @@ Diagrams are inline SVG using the shared primitives — `.bx` `.bx-ext` `.bx-acc
 
 > `doc.css` scopes its link colour to `main a`. A global `a` rule there loads after `hub.css` and repaints the nav petrol-on-petrol — invisible. This has happened once already.
 
+**Stylesheet links carry a `?v=` date query.** GitHub Pages caches assets for 10 minutes, so an unversioned stylesheet change pairs stale CSS with new HTML — the rebrand shipped with nav logos squashed by the cached old rule until caches expired. Bump the query on every stylesheet edit; the links check strips queries before resolving.
+
 ### Editorial standard
 
 The hub's value is that it is accurate about things that are easy to get wrong. That imposes a few rules:
