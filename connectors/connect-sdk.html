@@ -59,6 +59,7 @@
       <a href="#storage">Local store</a>
       <a href="#languages">Other languages</a>
       <a href="#when">When to reach for it</a>
+      <a href="#skill">Build with an assistant</a>
     </div>
   </div>
 </header>
@@ -255,6 +256,27 @@
         </ul>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="skill">
+  <div class="wrap">
+    <p class="eyebrow">Build with an assistant</p>
+    <h2>The deployment skill, and how to load it</h2>
+    <p>The SDK repository ships an agent skill — <a href="https://github.com/tsanetgit/Connect_SDK/tree/main/skills/connect-sdk-deploy"><code>skills/connect-sdk-deploy</code></a> — that carries this page's practical knowledge in a form an agentic coding assistant can apply while it works in your project: the artifact-versus-source decision above, the GitHub Packages token requirement, both credential modes with working configuration, the demo's build-run-host runbook, and a symptom-first troubleshooting file for the traps that recur. It is plain markdown: a <code>SKILL.md</code> that routes, plus three reference files it points into.</p>
+    <h3>Loading it</h3>
+    <p><strong>Claude Code</strong> — copy the whole folder into your integration project's skills directory; the references must ride along with the <code>SKILL.md</code> that cites them:</p>
+    <pre><code>git clone --depth 1 https://github.com/tsanetgit/Connect_SDK.git
+cp -R Connect_SDK/skills/connect-sdk-deploy  your-project/.claude/skills/</code></pre>
+    <p><strong>Other assistants</strong> — attach <code>SKILL.md</code> and the <code>references/</code> files as project instructions; nothing in it is Claude-specific. The skill lives in the SDK repository and evolves with it, so refresh your copy when you move to a new SDK release.</p>
+    <h3>Typical first steps</h3>
+    <ul class="tight">
+      <li><strong>Start with the path decision.</strong> <em>"We want to call the Connect API from our Java service — set up the dependency and authentication."</em> The skill routes you to the published artifact and surfaces the <code>read:packages</code> requirement before it bites, rather than after a 401 that looks like a missing artifact.</li>
+      <li><strong>Let it plan the demo.</strong> <em>"Get the SDK demo running locally"</em> or <em>"plan a hosted demo my colleagues can reach for a week."</em> Its first move is the one that matters here: checking whether you can build from source at all, and giving you the ask-TSANet fallback when you cannot — the same constraint under <a href="#getting">Getting it</a> above.</li>
+      <li><strong>Paste build errors verbatim.</strong> <code>cannot find symbol ... WebhooksApi</code> means one specific thing (the spec sibling is on the wrong branch), and the skill knows it; a paraphrase throws that away.</li>
+      <li><strong>Have it review your error handling.</strong> <em>"Check my integration against the API's error modes"</em> catches the behaviours from <a href="../api/index.html">Working with the API</a> — the 500-on-bad-login legacy mode, the test-flag read/write asymmetry, the registered-domain email rule — before your first live case does.</li>
+    </ul>
+    <div class="note"><strong>Boundaries worth keeping.</strong> Member credentials, client secrets and tenant IDs never go into an assistant session — the skill is written against placeholders and never needs a real value. And it is distilled guidance, not the source of truth: it instructs the assistant to read the repository's own documentation from your checkout, and where they seem to disagree, the repository is newer.</div>
   </div>
 </section>
 
