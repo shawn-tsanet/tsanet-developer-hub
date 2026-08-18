@@ -56,6 +56,7 @@
       <a href="#setup">Setup</a>
       <a href="#gotchas">Platform gotchas</a>
       <a href="#clocks">Deprecation clocks</a>
+      <a href="#skill">Build with an assistant</a>
     </div>
   </div>
 </header>
@@ -524,6 +525,28 @@ PUT  /api/v2/tickets/{id}.json
       <li><strong>Migrating an existing install:</strong> connection names are unique across types, so delete the old <code>basic_auth</code> connection named <code>zendesk</code> and create the OAuth one under the same name. Zero bundle changes.</li>
     </ul>
     <div class="note"><strong>Bundle upload is the one endpoint that rejects OAuth outright.</strong> <code>POST /registry/{integration}/bundles</code> returns 401 for all OAuth bearers. It accepts an API token or an authenticated admin session — and since API tokens are on the clock above, the admin-session path is the documented one. That is exactly what the app's nav-bar deploy screen uses, so no member should be minting a token for this.</div>
+  </div>
+</section>
+
+<section id="skill">
+  <div class="wrap">
+    <p class="eyebrow">Build with an assistant</p>
+    <h2>The implementation skill, and how to load it</h2>
+    <p>The connector repository ships an agent skill — <a href="https://github.com/tsanetgit/Zendesk_App/blob/main/SKILL_TSANet_Connect.md"><code>SKILL_TSANet_Connect.md</code></a> — distilled from the production implementation: the two-layer architecture, the OAuth setup and its traps, the custom-field scheme, the lifecycle rules, and the platform gotchas on this page in a form an agentic coding assistant can apply while it works in your codebase. It is a plain markdown file with skill frontmatter, so it loads into Claude Code and any other assistant that accepts an instruction file.</p>
+    <h3>Loading it</h3>
+    <p><strong>Claude Code</strong> — put it in your integration project's skills directory; from then on it triggers automatically whenever the work touches TSANet, ZAF or ZIS:</p>
+    <pre><code>mkdir -p .claude/skills/tsanet-connect
+curl -o .claude/skills/tsanet-connect/SKILL.md \
+  https://raw.githubusercontent.com/tsanetgit/Zendesk_App/main/SKILL_TSANet_Connect.md</code></pre>
+    <p><strong>Other assistants</strong> — add the same file to whatever your tool treats as project instructions (a rules file, a context attachment). Nothing in it is Claude-specific. The skill lives in the connector repository and evolves with it, so re-download it when you upgrade the connector.</p>
+    <h3>Typical first steps</h3>
+    <ul class="tight">
+      <li><strong>Start with routing, not code.</strong> <em>"We're installing TSANet Connect for Zendesk — which layer do we need, and what should we provision first?"</em> The skill's first job is deciding between the ZAF app, ZIS, and a custom REST path, and it will surface prerequisites before you hit them.</li>
+      <li><strong>Do auth with it, not after it.</strong> <em>"Walk me through the ZIS OAuth client-credentials setup."</em> The scope format that looks right and fails, and the secret-handling rules, are exactly the traps it exists to catch — the same ones under <a href="#auth">Authentication</a> above.</li>
+      <li><strong>Paste errors verbatim.</strong> An <code>AADSTS</code> code or a silent no-op delivery means more to the skill than a paraphrase — several of this platform's failures look unrelated to their cause.</li>
+      <li><strong>Have it review before you install.</strong> <em>"Review my custom-field scheme and trigger conditions against the skill's field reference"</em> is cheaper than re-provisioning a live tenant.</li>
+    </ul>
+    <div class="note"><strong>Two boundaries worth keeping.</strong> Never paste client secrets, tokens, or webhook signing keys into an assistant session — the skill never needs a real credential to do its job. And the skill is distilled guidance, not a substitute for this page or the repository's install documentation: where they seem to disagree, the repository is newer and this page says what it was verified against.</div>
   </div>
 </section>
 

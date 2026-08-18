@@ -296,6 +296,19 @@ catch (<span class="good-v">GatewayException</span> rejected)        { surfaceTo
       <h4>Passing is necessary, not sufficient</h4>
       <p>The harness only sees the TSANet side of your adapter, because TSANet has no access to your platform. Your inbound path, your platform writes actually landing, credential isolation (one client per member, never shared), and test-flag discipline are yours to test.</p>
     </div>
+    <h3>Using the kit with an agentic coding assistant</h3>
+    <p>The authoring kit is written as an <strong>agent skill</strong>, deliberately: a <code>SKILL.md</code> that carries the build order and the rules, plus reference files it points into — the platform questions, the binding semantics, onboarding, deploy-and-go-live, and the vendored API spec. Loaded into an agentic assistant, it makes the assistant apply TSANet's rules while it writes your adapter, instead of you relaying them.</p>
+    <p>When onboarding grants you repository access, copy the whole kit folder — the references must ride along with the <code>SKILL.md</code> that cites them:</p>
+    <pre><code>cp -R Connect_Gateway/skills/connect-adapter-author  your-adapter-project/.claude/skills/</code></pre>
+    <p>That path is Claude Code's project skills directory; for other assistants, attach <code>SKILL.md</code> and the <code>references/</code> files as project instructions — the kit is plain markdown and assumes no particular tool. (A second, TSANet-internal skill covers the adapters TSANet builds itself; it is not part of the member kit.)</p>
+    <p><strong>Typical first steps, in the kit's own order:</strong></p>
+    <ul class="tight">
+      <li><em>"Complete references/platform-questions.md with me for &lt;platform&gt;."</em> Do this before any design talk — several answers are decisions, and the completed document is what TSANet works from when you raise a question.</li>
+      <li><em>"Summarize the semantics rules that bind my adapter, then check my planned design against them."</em> Cheaper than discovering a rule while debugging.</li>
+      <li><em>"Wire the conformance suite into this project per conformance/README.md."</em> Then keep it running continuously — and watch it fail at least once so you know it is exercising your code, not a wrapper.</li>
+      <li><strong>Outbound first, inbound second</strong> — the assistant should be held to the kit's order, because outbound is where the irreversible mistakes live and where the harness gives a correctness signal from day one.</li>
+    </ul>
+    <div class="note"><strong>Boundaries the skill itself enforces — keep them.</strong> It instructs the assistant to route "ask TSANet" items to TSANet rather than inventing a local answer, and to keep submissions test-flagged until going live is a deliberate, agreed step. Both exist because the cost of getting them wrong lands on a real partner. And as everywhere: registry credentials and platform secrets never belong in an assistant session.</div>
   </div>
 </section>
 
