@@ -50,7 +50,7 @@
       <span><b>Class</b> Gateway adapter</span>
       <span><b>Status</b> Early access</span>
       <span><b>Surface</b> Canvas Kit sidebar, Help Desk</span>
-      <span><b>Last verified</b> 2026-08-09</span>
+      <span><b>Last verified</b> 2026-08-19</span>
     </div>
     <div class="toc">
       <a href="#class">Why it is shaped differently</a>
@@ -533,7 +533,7 @@
         </tbody>
       </table>
     </div>
-    <div class="note"><strong>Deployment precondition.</strong> The durable store must live on storage that outlives the container, and the production profile refuses to start on a memory store or a relative path. Confirm the actual mount before the first production deploy — network filesystems and SQLite write-ahead logging do not mix, and whether a given mount refuses loudly or opens quietly with unreliable locking cannot be established from documentation.</div>
+    <div class="note"><strong>Deployment answer, probed rather than assumed.</strong> SQLite write-ahead logging cannot run on a network-filesystem mount — probed live on Azure Files SMB, where it fails loudly at the very first connection. The reference deployment therefore keeps the database on replica-local storage and pairs it with a backup loop to durable storage (copied every few minutes, restored on boot), and the production profile still refuses to start on a memory store or a relative path. A backup loop is not a database: worst case a restart loses the last few minutes of link writes, which is acceptable for a pilot and not for production — production replaces the file with a managed database, by design a configuration swap rather than a rewrite.</div>
   </div>
 </section>
 
