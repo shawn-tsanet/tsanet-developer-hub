@@ -63,6 +63,7 @@
       <a href="#platform">Platform notes</a>
       <a href="#environments">Environments</a>
       <a href="#gaps">Known gaps</a>
+      <a href="#skill">Build with an assistant</a>
     </div>
   </div>
 </header>
@@ -662,6 +663,27 @@
         <li><strong>Orphaned claims</strong> hold the poller cursor loudly and indefinitely until a human releases them. Alert on consecutive held cycles, not on consecutive failures.</li>
       </ul>
     </div>
+  </div>
+</section>
+
+<section id="skill">
+  <div class="wrap">
+    <p class="eyebrow">Build with an assistant</p>
+    <h2>The deployment skill, and how to load it</h2>
+    <p>The connector repository ships an agent skill — <a href="https://github.com/tsanetgit/Fin-Intercom_App/tree/main/skills/fin-intercom-deploy"><code>skills/fin-intercom-deploy</code></a> — that carries this page's operational knowledge in a form an agentic coding assistant can apply while it works on your deployment: the invariants that produce specific defects when violated (one live adapter per member, single replica, a link store that survives restarts), the Intercom workspace setup — the private app's canvas and webhook URLs, the topics that must be subscribed explicitly, the Back-office ticket type with its three exactly-named attributes, the per-workspace ticket-state ids — the TSANet-side provisioning, webhook subscription and go-live flag, and the complete environment table with a verification checklist. It is plain markdown: a <code>SKILL.md</code> that routes, plus three reference files it points into.</p>
+    <h3>Loading it</h3>
+    <p><strong>Claude Code</strong> — copy the whole folder into your deployment project's skills directory; the references must ride along with the <code>SKILL.md</code> that cites them:</p>
+    <pre><code>git clone --depth 1 https://github.com/tsanetgit/Fin-Intercom_App.git
+cp -R Fin-Intercom_App/skills/fin-intercom-deploy  your-project/.claude/skills/</code></pre>
+    <p><strong>Other assistants</strong> — attach <code>SKILL.md</code> and the <code>references/</code> files as project instructions; nothing in it is Claude-specific. The skill lives in the connector repository and evolves with it, so refresh your copy when you update the connector.</p>
+    <h3>Typical first steps</h3>
+    <ul class="tight">
+      <li><strong>Start with the invariants.</strong> <em>"Deploy the TSANet connector for our Intercom workspace."</em> The skill's first outputs are the preconditions that hurt most when discovered late: nothing else may run against the same member credentials, and the link store must sit on storage that outlives the container — with the platform trap that SQLite WAL cannot run on a network filesystem.</li>
+      <li><strong>Let it drive the workspace setup.</strong> <em>"Set up our Intercom workspace for TSANet."</em> It knows the traps that do not error: granted permissions subscribe no webhook topics by themselves, ticket attributes are name-keyed identity so a rename surfaces as a failed read-back rather than a write error, and ticket-state ids are enumerable only through a one-off out-of-band call that must never end up in anything that runs continuously.</li>
+      <li><strong>Paste refusals verbatim.</strong> The connector prefers refusing loudly to acting wrongly, and every startup refusal or error-level audit line names its cause. The skill maps each symptom to the unset knob — a paraphrase throws that mapping away.</li>
+      <li><strong>Finish with the checklist.</strong> <em>"Verify the deployment end to end."</em> The boot-log storage path, one outbound submission (submitter email on your registered domain), one inbound test case arriving as a ticket, the unsigned-request 401 check, and the audit lines your monitoring should alert on.</li>
+    </ul>
+    <div class="note"><strong>Boundaries worth keeping.</strong> Member credentials, Intercom client secrets and access tokens never go into an assistant session — the skill is written against placeholders and never needs a real value. And it is distilled guidance, not the source of truth: it names the repository's own files as the authority (the configuration table defers to <code>application.yml</code>, the reasoning to <code>docs/decisions.md</code>), and where they seem to disagree, the repository is newer.</div>
   </div>
 </section>
 
