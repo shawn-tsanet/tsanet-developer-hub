@@ -8,9 +8,12 @@ No build step, no framework, no dependencies. Plain HTML and CSS, deployable as-
 
 ## Where this lives
 
-Public at `shawn-tsanet/tsanet-developer-hub`, with the site served by GitHub Pages at <https://shawn-tsanet.github.io/tsanet-developer-hub/>. Moving the repo to the `tsanetgit` org needs agreement that is not yet in place — the current location is a deliberate holding position, not an oversight. GitHub Discussions is enabled with seven categories and is linked throughout the site's Community section. One standing caveat: GitHub cannot transfer Discussions between repositories, so anything posted before a move to `tsanetgit` stays behind.
+Public at `tsanetgit/tsanet-developer-hub`, with the site served by GitHub Pages at <https://tsanetgit.github.io/tsanet-developer-hub/>. The repo was transferred there from `shawn-tsanet` on 2026-08-21 as a whole-repo ownership transfer, which carried history, Discussions (all seven categories and the threads in them), and settings across intact. GitHub Discussions is enabled and linked throughout the site's Community section.
 
-One consequence worth knowing: **GitHub cannot transfer Discussions between repositories.** Anything posted before a move is effectively scratch.
+Two consequences of the transfer worth knowing:
+
+- GitHub redirects the old web and git URLs (`github.com/shawn-tsanet/tsanet-developer-hub`) to the new ones, but **does not redirect the old Pages URL** — `shawn-tsanet.github.io/tsanet-developer-hub/` is dead. Anything outside this repo that linked there needs updating.
+- **Never create a repo named `tsanet-developer-hub` under `shawn-tsanet`.** Doing so permanently deletes the redirects.
 
 ## Structure
 
@@ -109,11 +112,11 @@ Visual inspection is not sufficient — this check found four defects on pages t
 
 ## Deploying
 
-Live: Pages deploys from `main` / root on every push — no action needed beyond pushing. `developer.tsanet.org` already resolves; set it as the custom domain in Pages settings once the repo location is settled.
+Live: Pages deploys from `main` / root on every push — no action needed beyond pushing. The repo location is now settled, so the custom domain is the next step: point `developer.tsanet.org` at `tsanetgit.github.io` in DNS and set it as the custom domain in Pages settings. Changing Pages settings needs repo admin, which in the `tsanetgit` org means an org owner (or an explicit admin grant on this repo).
 
 ## Open items
 
-- **Repo location** — pending agreement to move to `tsanetgit`. Discussions cannot move with it.
+- **Custom domain** — `developer.tsanet.org` is not yet set on Pages (see *Deploying*). Until it is, the canonical URL is `tsanetgit.github.io/tsanet-developer-hub`.
 - **v1 → v2 migration** is now published: the API page's *Deprecation clocks* section carries the per-connector table, and the SDK page notes its own split posture (reads on `/v2/collaboration-requests/list`, webhook management on deprecated `/v1/webhooks` — verified against SDK source and its generated client). Dynamics has since been probed against `MS_Power_App` release v2.13.0.1: it registers on v2 with prefixed types (creation and note events only; responses and closures ride the poll), and its endpoint never matches type strings, so it cannot hit the no-op trap. Still open: the Zendesk CloudEvents migration has not shipped yet.
 - **Dynamics user guide** describes the Case form integration as a "Lightning Web Component". That is Salesforce terminology; the solution ships an HTML web resource. The hub notes the discrepancy; the source doc is still wrong.
 - **API reference drift** — the GitBook reference shows `description` as a query parameter on the attachment forward call; the spec has it as a required multipart form field (re-verified against `openapi.yaml`). The hub now flags it in the API page's attachments section; the GitBook reference itself is still wrong.
