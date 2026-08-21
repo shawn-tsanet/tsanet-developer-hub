@@ -50,7 +50,7 @@
       <span><b>Class</b> Gateway adapter</span>
       <span><b>Status</b> Early access</span>
       <span><b>Surface</b> Canvas Kit sidebar, Help Desk</span>
-      <span><b>Last verified</b> 2026-08-19</span>
+      <span><b>Last verified</b> 2026-08-21</span>
     </div>
     <div class="toc">
       <a href="#class">Why it is shaped differently</a>
@@ -62,6 +62,7 @@
       <a href="#mapping">Status mapping</a>
       <a href="#platform">Platform notes</a>
       <a href="#environments">Environments</a>
+      <a href="#changes">Recent changes</a>
       <a href="#gaps">Known gaps</a>
       <a href="#skill">Build with an assistant</a>
     </div>
@@ -335,7 +336,7 @@
     </figure>
     <ul class="legend">
       <li><span class="n">1</span><span><b>Canvas requests.</b> <code>POST /canvas/initialize</code> and <code>/canvas/submit</code>, signed <code>X-Body-Signature</code>, HMAC-SHA256 over the raw body with the Intercom app client secret.</span></li>
-      <li><span class="n">2</span><span><b>Intercom webhooks.</b> <code>POST /webhooks/intercom</code>, signed <code>X-Hub-Signature</code>, HMAC-SHA1 (<code>sha1=&lt;hex&gt;</code>), same client secret. Note the two schemes differ in both algorithm and prefix.</span></li>
+      <li><span class="n">2</span><span><b>Intercom webhooks.</b> <code>POST /webhooks/intercom</code>, signed <code>X-Hub-Signature</code>, HMAC-SHA1 (<code>sha1=&lt;hex&gt;</code>), same client secret. Note the two schemes differ in both algorithm and prefix. <strong>Today this edge carries nothing:</strong> no handler consumes an Intercom event, so the reference deployment subscribes no topics (verified 2026-08-20 — a full inbound E2E ran green with the list empty). The intake stays signature-gated for the day a feature needs a topic.</span></li>
       <li><span class="n">3</span><span><b>TSANet push.</b> <code>POST /webhooks/tsanet</code>, CloudEvents v2, signed <code>x-hub-signature-256</code>, HMAC-SHA256. Non-routable bodies are refused loudly but still answered 200.</span></li>
       <li><span class="n">4</span><span><b>Connect API calls.</b> REST <code>/v1</code>, bearer injected per request by interceptor; OAuth pre-refreshes on a 30s expiry skew. Hard deadlines: 1500ms reads, 4000ms mutations, on virtual threads.</span></li>
       <li><span class="n">5</span><span><b>Intercom API calls.</b> Tickets, admin notes, ticket-state writes. Every mutation is read back and asserted: the API 200s while ignoring unknown fields.</span></li>
@@ -526,6 +527,7 @@
         <tbody>
           <tr><td><code>SubmissionLinkTable</code></td><td><span class="pill ok">yes · required</span></td><td>The token ↔ ticket routing substrate; indexed by token, <code>internalCaseNumber</code> and conversation id; never evicted. Carries <code>CaseState</code>, annotation state, case number and surfaced status.</td></tr>
           <tr><td><code>PollerStateStore</code></td><td><span class="pill ok">yes</span></td><td>Reconciliation cursor. A lost cursor costs one wider re-scan; lost links orphan every open case — which is why only the cursor is allowed an in-memory fallback.</td></tr>
+          <tr><td><code>connect-sdk.db</code> (SDK cache)</td><td><span class="pill ok">yes</span></td><td>The embedded engine's operational cache: case summaries, note text, response details, webhook receipts. A <em>cache</em>, not the source of truth — the panel and the poller re-fetch by token — which is what makes the optional retention sweep safe: <code>CONNECTOR_SDK_CACHE_RETENTION</code> (default off, per deployment) evicts <em>terminal</em> cases and their child rows past the window; OPEN cases never age out. Backed up with the link store (5-minute latest copy plus hourly snapshots on a 48-hour window), so evicted content is gone from every store at most 48h after the sweep.</td></tr>
           <tr><td><code>FlowStateStore</code></td><td><span class="pill warn">no · by design</span></td><td>Canvas flow state. SUBMITTING and UNRESOLVED flows are exempt from eviction and TTL; an expired flow restarts cleanly from the home canvas.</td></tr>
           <tr><td><code>DedupeStore</code></td><td><span class="pill warn">no</span></td><td>In-memory LRU, 10,000 ids. Replay past the bound is re-processed; accepted because downstream handling is idempotent anyway.</td></tr>
           <tr><td><code>EventQueue</code></td><td><span class="pill warn">no</span></td><td>Bounded; <code>offer()</code> drops on full. Both annotation offer sites audit the failure with the token so the manual re-drive path holds.</td></tr>
@@ -591,11 +593,19 @@
 
     <h3>Events</h3>
     <ul class="tight">
-      <li><strong>Topic subscription is separate from permissions.</strong> A permissions page showing everything enabled does <em>not</em> subscribe any topic. An empty topic list delivers nothing, silently, and looks exactly like a broken endpoint. Select topics explicitly on the Webhooks page.</li>
+      <li><strong>Subscribe no topics today.</strong> The connector consumes no Intercom webhook event: no handler claims the Intercom event source, so every delivery of every topic is verified, queued, logged as key names only, and discarded (verified 2026-08-20, including a full inbound E2E with the subscription list empty). An empty list removes an entire data-in-motion surface for free, and it is now the reference deployment's state. The trap to remember for the day a feature needs a topic: <strong>topic subscription is separate from permissions</strong> — a permissions page showing everything enabled subscribes nothing, and topics must be selected explicitly on the Webhooks page.</li>
       <li><strong>Signatures are byte-exact and differ per endpoint.</strong> Canvas requests use <code>X-Body-Signature</code>, HMAC-SHA256 over the body, bare lowercase hex. Webhooks use <code>X-Hub-Signature</code>, HMAC-SHA1, with a <code>sha1=</code> prefix. Both are keyed on the same app client secret.</li>
       <li><strong>Delivery contract:</strong> 5 second timeout, one retry, 429 throttling. Intake should fast-ack and hand to a queue, with a reconciliation poller as the source of truth.</li>
       <li><strong>Payloads are full objects</strong>, unusually generous: ticket topics carry the complete ticket including attributes and contacts. This removes a whole class of follow-up reads — and is the opposite of TSANet's thin payloads.</li>
       <li><code>ticket.created</code> also fires an initial <code>ticket.state.updated</code>.</li>
+    </ul>
+
+    <h3>Permissions</h3>
+    <p>Verified live against a development workspace (2026-08-20/21) with reduced-grant probe apps, not read off a permissions page. The connector's standing minimum: <strong>Read tickets</strong>, <strong>Write tickets</strong>, <strong>Read and write users</strong> (contact search), <strong>Write users and companies</strong> (despite the name, the scope that creates and updates contacts — the synthetic partner contact needs it once), and <strong>Write conversations</strong>. Intercom additionally grants four greyed, un-uncheckable baseline scopes to every app, so reads of segments, companies, tags and admins succeed regardless and are not a misconfiguration.</p>
+    <ul class="tight">
+      <li><strong>Permission edits are inert until the access token is regenerated.</strong> Saving toggles changes nothing about what the existing token can do; the Authentication page shows a warning banner once they drift. The order that works: save toggles → regenerate → update the connector's environment → restart. Signature verification is unaffected (it keys on the client secret).</li>
+      <li><strong>Which grant gates what, probed:</strong> ticket notes (<code>POST /tickets/{id}/reply</code>) ride <em>Write tickets</em> — 200 under a tickets-only token — and only the conversation-reply endpoint needs <em>Write conversations</em> (401 under the same token on the same underlying object). A genuine per-endpoint split, even though tickets are conversation-backed.</li>
+      <li><strong>The hardened profile</strong>, for workspaces whose security review wants the standing surface minimized, stacks three verified reductions on the minimum: no webhook topics (above); <strong>tickets-only mode</strong> (<code>CONNECTOR_TICKETS_ONLY=true</code>, default off) refuses new collaborations from plain conversations with a static canvas so <em>Write conversations</em> can be dropped; and <em>Write users and companies</em> is revoked after the synthetic contact is provisioned at onboarding (if it is ever needed again, the failure is loud and the poller recovers after re-grant). Resulting standing set: Read/Write tickets plus Read and write users, plus the baseline scopes. Two consequences to accept deliberately: agents lose canvas visibility into pre-existing conversation-anchored collaborations, and partner-response notes for those same links fail loudly in the audit log once the grant is gone — drop it only when no conversation-anchored links are active.</li>
     </ul>
 
     <h3>Object model and tenancy</h3>
@@ -645,6 +655,35 @@
   </div>
 </section>
 
+<section id="changes">
+  <div class="wrap">
+    <p class="eyebrow">Since the last verification</p>
+    <h2>Recent changes, and what is tracked next</h2>
+    <div class="cols">
+      <div>
+        <h3>Landed (August 2026)</h3>
+        <ul class="tight">
+          <li><strong>First full design-level security review</strong> against the connector security taxonomy (supply chain, credential lifecycle, authentication boundaries, data flow and retention, audit, untrusted-content rendering), with the authentication boundary live-probed. Findings are filed as <code>security</code>-labelled issues in the repository; several of the items below are its outcomes.</li>
+          <li><strong>Hardened deployment profile:</strong> no webhook topics (verified functionally free), tickets-only mode, verified-minimum grants with a documented provision-then-revoke step — all in the deployment skill's <code>intercom-setup.md</code>.</li>
+          <li><strong>SDK-cache retention sweep:</strong> age-based eviction of terminal-case content on a per-deployment window, default off (see the persistence table).</li>
+          <li><strong>Backups gained history:</strong> hourly dated snapshots on a 48-hour window beside the 5-minute latest copy, with a delete-first restore procedure that survives a snapshot lacking a WAL file.</li>
+          <li><strong>Build provenance:</strong> the deployable image is built in CI from a repository commit and pushed with a secretless, registry-scoped identity (no admin credential); images are addressed by digest. Dependency updates are automated; workflow actions are SHA-pinned.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Tracked next (not promises)</h3>
+        <ul class="tight">
+          <li><strong>Registry pull by managed identity</strong> and retirement of the registry admin credential — the live-touching half of the provenance work.</li>
+          <li><strong>Retention upstream:</strong> a first-class eviction API in <code>connect-library</code> so the adapter's sweep collapses into a library call (tracked in the SDK repository).</li>
+          <li><strong>Notes in both directions and status sync</strong> still wait on estate-wide decisions shared with the Zendesk connector: a note summary convention, severity mapping, and a platform direction field on notes.</li>
+          <li><strong>Outbound closure policy</strong> — see Known gaps.</li>
+        </ul>
+        <p style="font-size:13.5px">Evidence standard: everything under "Landed" is merged and was probed; everything under "Tracked next" has an open issue and no merged code.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="gaps">
   <div class="wrap">
     <p class="eyebrow">Honesty section</p>
@@ -670,7 +709,7 @@
   <div class="wrap">
     <p class="eyebrow">Build with an assistant</p>
     <h2>The deployment skill, and how to load it</h2>
-    <p>The connector repository ships an agent skill — <a href="https://github.com/tsanetgit/Fin-Intercom_App/tree/main/skills/fin-intercom-deploy"><code>skills/fin-intercom-deploy</code></a> — that carries this page's operational knowledge in a form an agentic coding assistant can apply while it works on your deployment: the invariants that produce specific defects when violated (one live adapter per member, single replica, a link store that survives restarts), the Intercom workspace setup — the private app's canvas and webhook URLs, the topics that must be subscribed explicitly, the Back-office ticket type with its three exactly-named attributes, the per-workspace ticket-state ids — the TSANet-side provisioning, webhook subscription and go-live flag, and the complete environment table with a verification checklist. It is plain markdown: a <code>SKILL.md</code> that routes, plus three reference files it points into.</p>
+    <p>The connector repository ships an agent skill — <a href="https://github.com/tsanetgit/Fin-Intercom_App/tree/main/skills/fin-intercom-deploy"><code>skills/fin-intercom-deploy</code></a> — that carries this page's operational knowledge in a form an agentic coding assistant can apply while it works on your deployment: the invariants that produce specific defects when violated (one live adapter per member, single replica, a link store that survives restarts), the Intercom workspace setup — the private app's canvas and webhook URLs, the webhook topic list (empty today, and why), the verified-minimum permissions and the hardened profile, the Back-office ticket type with its three exactly-named attributes, the per-workspace ticket-state ids — the TSANet-side provisioning, webhook subscription and go-live flag, and the complete environment table with a verification checklist. It is plain markdown: a <code>SKILL.md</code> that routes, plus three reference files it points into.</p>
     <h3>Loading it</h3>
     <p><strong>Claude Code</strong> — copy the whole folder into your deployment project's skills directory; the references must ride along with the <code>SKILL.md</code> that cites them:</p>
     <pre><code>git clone --depth 1 https://github.com/tsanetgit/Fin-Intercom_App.git
@@ -679,7 +718,7 @@ cp -R Fin-Intercom_App/skills/fin-intercom-deploy  your-project/.claude/skills/<
     <h3>Typical first steps</h3>
     <ul class="tight">
       <li><strong>Start with the invariants.</strong> <em>"Deploy the TSANet connector for our Intercom workspace."</em> The skill's first outputs are the preconditions that hurt most when discovered late: nothing else may run against the same member credentials, and the link store must sit on storage that outlives the container — with the platform trap that SQLite WAL cannot run on a network filesystem.</li>
-      <li><strong>Let it drive the workspace setup.</strong> <em>"Set up our Intercom workspace for TSANet."</em> It knows the traps that do not error: granted permissions subscribe no webhook topics by themselves, ticket attributes are name-keyed identity so a rename surfaces as a failed read-back rather than a write error, and ticket-state ids are enumerable only through a one-off out-of-band call that must never end up in anything that runs continuously.</li>
+      <li><strong>Let it drive the workspace setup.</strong> <em>"Set up our Intercom workspace for TSANet."</em> It knows the traps that do not error: granted permissions subscribe no webhook topics by themselves (and none need subscribing today), ticket attributes are name-keyed identity so a rename surfaces as a failed read-back rather than a write error, and ticket-state ids are enumerable only through a one-off out-of-band call that must never end up in anything that runs continuously.</li>
       <li><strong>Paste refusals verbatim.</strong> The connector prefers refusing loudly to acting wrongly, and every startup refusal or error-level audit line names its cause. The skill maps each symptom to the unset knob — a paraphrase throws that mapping away.</li>
       <li><strong>Finish with the checklist.</strong> <em>"Verify the deployment end to end."</em> The boot-log storage path, one outbound submission (submitter email on your registered domain), one inbound test case arriving as a ticket, the unsigned-request 401 check, and the audit lines your monitoring should alert on.</li>
     </ul>
